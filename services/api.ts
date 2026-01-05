@@ -1,6 +1,5 @@
-
-import { Product, Order, Address } from '../types';
-import { products as mockProducts, orders as mockOrders } from '../data';
+import { Product, Order, Address, CartItem, UserProfile, AuthUser, UserRole } from '../types';
+import { products as mockProducts, orders as mockOrders, mockUsers } from '../data';
 
 // Configuration
 const USE_MOCK_BACKEND = true; // Toggle this to false to use the real Node.js server
@@ -75,21 +74,76 @@ class MockBackend {
     return mockProducts.find(p => p.id === id);
   }
 
-  static async getUserProfile() {
-    await simulateDelay(500);
-    return {
-      name: 'Sarah Jenkins',
-      email: 'sarah.jenkins@example.com',
-      phone: '+91 98765 43210',
-      avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCU0jVydwO_BzTasvf11ZjkOxK8TbjCy26l_NVLd7PCYz5fcpsIcCX0IWjQPee7kNU9ypCADDv93ImEfaUWsAO3Ha6tcoyTx2cNGdiHRVR5nFj_qD4xiAh6brmbK9hnGVewKil-RoO4ecMGWEz37ZPkRZeINF_Gkn9U3tR8wF_ZWe5nadbzxcCHZ_7ahlTrqxZuf6bygLSwVWRdoNNFc9de4UGhOOx7qQ-uTTKwIMZoZVLiZwaQ-omKY8I7rDpduCsl3lTAPJM3AC2v',
-      bio: 'Mom of two lovely energetic kids. Love finding educational toys!',
-      preferences: { newsletter: true, smsNotifications: false }
-    };
+  // --- Mock Authentication ---
+  static async login(email: string, password: string): Promise<{ user: AuthUser, token: string } | null> {
+    await simulateDelay(700);
+    let role: UserRole | null = null;
+    let userProfile: UserProfile | undefined;
+
+    if (email === 'user@example.com' && password === 'password') {
+      userProfile = mockUsers['sarah.jenkins@example.com'];
+      role = 'user';
+    } else if (email === 'admin@example.com' && password === 'adminpass') {
+      userProfile = mockUsers['admin@example.com'];
+      role = 'admin';
+    }
+
+    if (userProfile && role) {
+      return {
+        user: { ...userProfile, role },
+        token: `mock-jwt-${userProfile.id}-${Date.now()}` // Mock token
+      };
+    }
+    return null; // Invalid credentials
   }
 
-  static async getOrders(): Promise<Order[]> {
+  static async getUserProfile(userEmail: string): Promise<UserProfile> {
+    await simulateDelay(500);
+    const profile = mockUsers[userEmail];
+    if (!profile) throw new Error("Mock profile not found");
+    return { ...profile }; // Return a clone
+  }
+
+  static async updateProfile(updatedProfile: UserProfile): Promise<UserProfile> {
+    await simulateDelay(800);
+    const existing = mockUsers[updatedProfile.email];
+    if (existing) {
+        mockUsers[updatedProfile.email] = { ...existing, ...updatedProfile };
+        return mockUsers[updatedProfile.email];
+    }
+    throw new Error("Mock profile not found for update");
+  }
+
+  static async getOrders(userEmail: string): Promise<Order[]> {
     await simulateDelay(600);
-    return mockOrders;
+    // Filter mock orders by customer email
+    return [...mockOrders].filter(order => order.customerEmail === userEmail).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }
+  
+  static async createOrder(items: CartItem[], total: number, customerEmail?: string): Promise<Order> {
+    await simulateDelay(1000);
+    const userProfile = customerEmail ? mockUsers[customerEmail] : null;
+    if (!userProfile) throw new Error("Customer profile not found for order creation");
+
+    const newOrder: Order = {
+        id: `ORD-${Math.floor(Math.random() * 9000) + 1000}`,
+        date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+        customerName: userProfile.name,
+        customerEmail: userProfile.email,
+        items: items.map(item => ({
+            productId: item.id,
+            name: item.name,
+            image: item.image,
+            quantity: item.quantity,
+            price: item.price,
+        })),
+        total: total,
+        status: 'Processing',
+        shippingAddress: mockOrders[0].shippingAddress, // Use an existing address for mock data
+        paymentMethod: 'UPI / QR Scan',
+    };
+    mockOrders.unshift(newOrder); // Add to the beginning of the list
+    return newOrder;
   }
 
   static async getRecommendations(history: string[]): Promise<Product[]> {
@@ -140,14 +194,22 @@ export const api = {
   },
 
   user: {
-    getProfile: async () => {
-      if (USE_MOCK_BACKEND) return MockBackend.getUserProfile();
-      const res = await fetch(`${API_BASE_URL}/user/profile`);
+    // New login function
+    login: async (email: string, password: string) => {
+        if (USE_MOCK_BACKEND) return MockBackend.login(email, password);
+        // In a real app, this would be a POST request to your auth endpoint
+        // const res = await fetch(`${API_BASE_URL}/auth/login`, { ... });
+        throw new Error("Real login not implemented in this demo.");
+    },
+
+    getProfile: async (userEmail: string) => { // Now requires email for mock lookup
+      if (USE_MOCK_BACKEND) return MockBackend.getUserProfile(userEmail);
+      const res = await fetch(`${API_BASE_URL}/user/profile?email=${userEmail}`); // Pass email for server-side mock
       return res.json();
     },
     
-    updateProfile: async (data: any) => {
-      if (USE_MOCK_BACKEND) { await simulateDelay(800); return data; }
+    updateProfile: async (data: UserProfile) => {
+      if (USE_MOCK_BACKEND) { return MockBackend.updateProfile(data); }
       const res = await fetch(`${API_BASE_URL}/user/profile`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -156,10 +218,16 @@ export const api = {
       return res.json();
     },
 
-    getOrders: async () => {
-      if (USE_MOCK_BACKEND) return MockBackend.getOrders();
-      const res = await fetch(`${API_BASE_URL}/user/orders`);
+    getOrders: async (userEmail: string) => { // Now requires email for mock lookup
+      if (USE_MOCK_BACKEND) return MockBackend.getOrders(userEmail);
+      const res = await fetch(`${API_BASE_URL}/user/orders?email=${userEmail}`); // Pass email for server-side mock
       return res.json();
+    },
+
+    createOrder: async (items: CartItem[], total: number, customerEmail?: string) => {
+        if (USE_MOCK_BACKEND) return MockBackend.createOrder(items, total, customerEmail);
+        // Real API call would go here, often without needing email directly if session is managed
+        return {} as Order;
     }
   },
 

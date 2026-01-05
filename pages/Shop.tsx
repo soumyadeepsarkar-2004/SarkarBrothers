@@ -18,14 +18,16 @@ const PRICE_RANGES = [
 
 const Shop: React.FC = () => {
   const [searchParams] = useSearchParams();
-  const search = searchParams.get('search');
+  const initialSearch = searchParams.get('search'); // Get search param from URL
   
   const [categoryFilter, setCategoryFilter] = useState<string[]>([]);
   const [priceFilter, setPriceFilter] = useState<string[]>([]);
   const [sortOption, setSortOption] = useState<string>('Newest Arrivals');
+  // searchTerm is now primarily driven by initialSearch from URL, so no local state management needed for filtering
   
   const [products, setProducts] = useState<Product[]>([]);
-  const [recommendations, setRecommendations] = useState<Product[]>([]);
+  const [generalRecommendations, setGeneralRecommendations] = useState<Product[]>([]); // For non-search recs
+  const [aiRecommendations, setAiRecommendations] = useState<Product[]>([]); // For search-based AI recs
   const [loading, setLoading] = useState(true);
   
   const { addToCart } = useCart();
@@ -40,7 +42,7 @@ const Shop: React.FC = () => {
         const priceRanges = priceFilter.map(label => PRICE_RANGES.find(r => r.label === label)).filter(Boolean) as {min:number, max:number}[];
         
         const data = await api.products.list({
-          search: search || undefined,
+          search: initialSearch || undefined, // Use initialSearch from URL
           categories: categoryFilter,
           priceRange: priceRanges,
           sort: sortOption
@@ -54,23 +56,47 @@ const Shop: React.FC = () => {
     };
 
     fetchProducts();
-  }, [search, categoryFilter, priceFilter, sortOption]);
+  }, [initialSearch, categoryFilter, priceFilter, sortOption]); // Depend on initialSearch
 
-  // Fetch Recommendations based on History
+  // Fetch General Recommendations based on History (when no active search)
   useEffect(() => {
-      const loadRecs = async () => {
-          const history = getHistory();
-          if (history.length > 0) {
-              try {
-                  const recs = await api.products.getRecommendations(history);
-                  setRecommendations(recs);
-              } catch (e) {
-                  console.error("Failed to load recommendations", e);
+      const loadGeneralRecs = async () => {
+          if (!initialSearch) { // Only load general recs if no search is active
+              const history = getHistory();
+              if (history.length > 0) {
+                  try {
+                      const recs = await api.products.getRecommendations(history);
+                      setGeneralRecommendations(recs);
+                  } catch (e) {
+                      console.error("Failed to load general recommendations", e);
+                  }
               }
+          } else {
+              setGeneralRecommendations([]); // Clear general recs if search is active
           }
       };
-      loadRecs();
-  }, []);
+      loadGeneralRecs();
+  }, [initialSearch]); // Depend on initialSearch
+
+  // Fetch AI-Powered Recommendations based on Search Term
+  useEffect(() => {
+    const fetchAiRecommendations = async () => {
+        if (initialSearch) { // Only fetch AI recs if there's an active search
+            try {
+                // api.products.getRecommendations uses the AI backend if USE_MOCK_BACKEND is false
+                // For mock backend, it does a simple keyword match (as implemented in services/api.ts)
+                const recs = await api.products.getRecommendations([initialSearch]); // Use initialSearch as history/context
+                setAiRecommendations(recs);
+            } catch (error) {
+                console.error("Failed to load AI recommendations", error);
+                setAiRecommendations([]); // Clear on error
+            }
+        } else {
+            setAiRecommendations([]); // Clear if no search
+        }
+    };
+    fetchAiRecommendations();
+}, [initialSearch]); // Re-fetch when the search term changes
   
   return (
     <div className="flex-1 max-w-[1440px] w-full mx-auto px-4 md:px-10 py-6">
@@ -83,7 +109,7 @@ const Shop: React.FC = () => {
           </h1>
           <p className="text-white/90 text-sm md:text-base max-w-md font-medium">Get up to 20% off on all outdoor toys and creative sets this season.</p>
         </div>
-        <img alt="Hero Banner" className="w-full h-[320px] md:h-[400px] object-cover transition-transform duration-700 group-hover:scale-105" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDdb7ombu3x9cn3GLYgNVr1gS-86p7uXYQxedFHI91rOub03Za6gBL11eCFIMhloUmrVzux2RCa0zMVDztA7KvnzsyDT7482beeJPzyHrT68AmADEnksyED27XBN2wMVv_z8gql2_QgUZ3XgE5vvd8tYoyIN6Y7uE8PtN8hC10sxb1RkIGVONWhyvWpb6rwec7A4yiJw7IDPDPKX5f7jxrlEMQgHhjRb0IUB1CTX74yrwKVuGRLzYZAr3wE4ShrRuPdN49UCvFIPQay" />
+        <img alt="Hero Banner" className="w-full h-[320px] md:h-[400px] object-cover transition-transform duration-700 group-hover:scale-105" src="https://images.unsplash.com/photo-1579624520336-d7e7c8a141d0?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" />
       </div>
 
       <div className="flex flex-col lg:flex-row gap-8">
@@ -92,7 +118,7 @@ const Shop: React.FC = () => {
           <div className="flex items-center justify-between">
             <h3 className="font-bold text-lg dark:text-white">{t('shop.filters')}</h3>
             <button 
-                onClick={() => { setCategoryFilter([]); setPriceFilter([]); }}
+                onClick={() => { setCategoryFilter([]); setPriceFilter([]); /* searchTerm is managed by URL, no local state clear needed */ }}
                 className="text-xs text-[#8a8060] font-medium hover:text-primary transition-colors"
             >
                 {t('shop.reset')}
@@ -166,33 +192,12 @@ const Shop: React.FC = () => {
 
         {/* Product Grid */}
         <div className="flex-1 flex flex-col">
-          
-          {/* AI Recommendations Section */}
-          {recommendations.length > 0 && !loading && !search && (
-              <div className="mb-10 animate-[fadeIn_0.5s_ease-out]">
-                  <h3 className="flex items-center gap-2 text-lg font-bold text-[#181611] dark:text-white mb-4">
-                      <span className="material-symbols-outlined text-primary fill-current">auto_awesome</span>
-                      Picked Just For You
-                  </h3>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      {recommendations.map(p => (
-                          <Link key={'rec-'+p.id} to={`/product/${p.id}`} className="block group bg-gradient-to-br from-primary/5 to-transparent border border-primary/20 rounded-xl overflow-hidden hover:border-primary/50 transition-all">
-                              <div className="aspect-square bg-white dark:bg-[#2a2a2a] relative">
-                                  <img src={p.image} alt={p.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                              </div>
-                              <div className="p-3">
-                                  <h4 className="font-bold text-sm text-[#181611] dark:text-white truncate">{p.name}</h4>
-                                  <p className="text-xs text-primary font-bold">{formatPrice(p.price)}</p>
-                              </div>
-                          </Link>
-                      ))}
-                  </div>
-              </div>
-          )}
+          {/* Previous AI Recommendations Section (now removed from here) */}
+          {/* Previous General Recommendations Section (now removed from here) */}
 
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
             <h2 className="text-2xl font-bold text-[#181611] dark:text-white">
-                {search ? `${t('shop.search_results')} "${search}"` : t('shop.all_toys')}
+                {initialSearch ? `${t('shop.search_results')} "${initialSearch}"` : t('shop.all_toys')}
                 <span className="text-base font-normal text-gray-500 ml-2">({products.length} items)</span>
             </h2>
             <div className="flex items-center gap-3">
@@ -229,7 +234,7 @@ const Shop: React.FC = () => {
                     
                     <Link to={`/product/${product.id}`} className="relative aspect-square bg-[#f8f8f8] dark:bg-[#252525] overflow-hidden block">
                     {product.badge && <div className="absolute top-3 left-3 z-10 bg-primary text-[#181611] text-[10px] font-extrabold px-2 py-1 rounded uppercase tracking-wider">{product.badge}</div>}
-                    <img alt={product.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" src={product.image} />
+                    <img alt="Product" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" src={product.image} />
                     </Link>
                     <div className="p-4 flex flex-col flex-1">
                     <Link to={`/product/${product.id}`}>
@@ -265,6 +270,38 @@ const Shop: React.FC = () => {
                 </div>
             )}
           </div>
+
+          {/* Combined Recommendations Section (Moved to the bottom) */}
+          {(aiRecommendations.length > 0 || generalRecommendations.length > 0) && !loading && (
+              <div className="mt-12 animate-[fadeIn_0.5s_ease-out]">
+                  <h3 className="flex items-center gap-2 text-xl font-bold text-[#181611] dark:text-white mb-6">
+                      {initialSearch && aiRecommendations.length > 0 ? (
+                        <>
+                          <span className="material-symbols-outlined text-blue-500 fill-current">psychology</span>
+                          AI-Powered Recommendations for "{initialSearch}"
+                        </>
+                      ) : (
+                        <>
+                          <span className="material-symbols-outlined text-primary fill-current">auto_awesome</span>
+                          Picked Just For You
+                        </>
+                      )}
+                  </h3>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      {(initialSearch && aiRecommendations.length > 0 ? aiRecommendations : generalRecommendations).map(p => (
+                          <Link key={'rec-'+p.id} to={`/product/${p.id}`} className={`block group rounded-xl overflow-hidden hover:shadow-lg transition-all ${initialSearch ? 'bg-gradient-to-br from-blue-500/5 to-transparent border border-blue-500/20 hover:border-blue-500/50' : 'bg-gradient-to-br from-primary/5 to-transparent border border-primary/20 hover:border-primary/50'}`}>
+                              <div className="aspect-square bg-white dark:bg-[#2a2a2a] relative">
+                                  <img src={p.image} alt={p.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                              </div>
+                              <div className="p-3">
+                                  <h4 className="font-bold text-sm text-[#181611] dark:text-white truncate">{p.name}</h4>
+                                  <p className={`text-xs font-bold ${initialSearch ? 'text-blue-500' : 'text-primary'}`}>{formatPrice(p.price)}</p>
+                              </div>
+                          </Link>
+                      ))}
+                  </div>
+              </div>
+          )}
         </div>
       </div>
     </div>

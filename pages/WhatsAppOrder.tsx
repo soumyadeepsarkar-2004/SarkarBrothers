@@ -1,6 +1,26 @@
+
 import React from 'react';
+import { formatPrice } from '../utils/formatters';
+import { products } from '../data';
+import { Product } from '../types';
 
 const WhatsAppOrder: React.FC = () => {
+  // Use a real product from the data for a consistent example
+  const exampleProduct: Product | undefined = products.find(p => p.id === '5'); // Super Galactic Robot
+
+  if (!exampleProduct) {
+    return (
+      <div className="flex-grow flex items-center justify-center">
+        <p>Example product not found.</p>
+      </div>
+    );
+  }
+
+  // Construct the WhatsApp URL
+  const phoneNumber = '919876543210'; // From nav contact info
+  const message = `Hello ToyWonder! I'd like to place an order for the "${exampleProduct.name}" for ${formatPrice(exampleProduct.price)}. Please let me know the next steps. Thank you!`;
+  const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+
   return (
     <div className="flex-grow flex flex-col items-center justify-center px-4 py-8 md:py-12 bg-background-light dark:bg-background-dark min-h-screen">
       <div className="w-full max-w-5xl">
@@ -19,13 +39,13 @@ const WhatsAppOrder: React.FC = () => {
             <div className="bg-white dark:bg-[#2a261a] rounded-xl shadow-sm border border-[#f5f3f0] dark:border-[#332e24] overflow-hidden">
               <div className="p-6">
                 <h3 className="text-sm font-bold uppercase tracking-wide text-[#8a8060] dark:text-primary mb-4">Order Summary</h3>
-                <div className="aspect-video w-full rounded-lg bg-gray-100 dark:bg-gray-800 mb-6 bg-cover bg-center" style={{ backgroundImage: 'url("https://lh3.googleusercontent.com/aida-public/AB6AXuDPT8wHbm0-aMkluiQOenYAyR12AC0cz2mdtjn2kL7lLXPW5dafB9fkiAVR6Q3HDiM8E-Dwx6rYJNOC5_gFxnv8siP8Vb6yApoKd7uYGBJJygi5F8Vk_kMe7iShqWyhxJLj_OKH3g5QAV66nx6NGQb-OT5U5q5pAwuZxYGelPiV7xaSFaC1jx_zLC0G-A6Tzlo1P9qeeXA74I8AFCdtJ7fXFRUiWquTr4qqXbKqCF1kCoxVwUPF19f2p9ZiQvTj3ntzDJFx0tfNYnMk")' }}></div>
+                <div className="aspect-video w-full rounded-lg bg-gray-100 dark:bg-gray-800 mb-6 bg-cover bg-center" style={{ backgroundImage: `url("${exampleProduct.image}")` }}></div>
                 <div className="flex flex-col gap-2">
                   <div className="flex justify-between items-start gap-4">
-                    <h4 className="text-xl font-bold leading-tight text-[#181611] dark:text-white">Super Galactic Space Robot</h4>
-                    <span className="text-xl font-bold text-primary whitespace-nowrap">$45.00</span>
+                    <h4 className="text-xl font-bold leading-tight text-[#181611] dark:text-white">{exampleProduct.name}</h4>
+                    <span className="text-xl font-bold text-primary whitespace-nowrap">{formatPrice(exampleProduct.price)}</span>
                   </div>
-                  <p className="text-sm text-[#8a8060] dark:text-[#a39b85]">Robot • 3+ Years</p>
+                  <p className="text-sm text-[#8a8060] dark:text-[#a39b85]">{exampleProduct.category} • {exampleProduct.specs?.["Age Rating"] || '3+ Years'}</p>
                 </div>
                 <hr className="my-4 border-[#f5f3f0] dark:border-[#443e32]" />
                 <div className="flex justify-between items-center text-sm">
@@ -39,7 +59,7 @@ const WhatsAppOrder: React.FC = () => {
               </div>
               <div className="bg-[#f8f8f5] dark:bg-[#332e24] px-6 py-4 flex items-center justify-between">
                 <span className="font-bold text-[#181611] dark:text-white">Total</span>
-                <span className="font-black text-xl text-[#181611] dark:text-white">$45.00</span>
+                <span className="font-black text-xl text-[#181611] dark:text-white">{formatPrice(exampleProduct.price)}</span>
               </div>
             </div>
           </div>
@@ -65,7 +85,7 @@ const WhatsAppOrder: React.FC = () => {
                 </div>
                 <div className="pt-1">
                   <h3 className="text-lg font-bold text-[#181611] dark:text-white">Receive Payment Link</h3>
-                  <p className="text-[#8a8060] dark:text-[#a39b85] text-sm mt-1">Our team will confirm stock and send a secure Stripe payment link directly in the chat.</p>
+                  <p className="text-[#8a8060] dark:text-[#a39b85] text-sm mt-1">Our team will confirm stock and send a secure payment link directly in the chat.</p>
                 </div>
               </div>
 
@@ -81,10 +101,14 @@ const WhatsAppOrder: React.FC = () => {
             </div>
 
             <div className="flex flex-col gap-4">
-              <button className="group relative flex w-full cursor-pointer items-center justify-center overflow-hidden rounded-xl h-16 px-8 bg-primary hover:bg-[#e0b020] transition-all text-[#181611] gap-3 text-lg font-bold shadow-lg shadow-primary/20 hover:shadow-primary/40">
+              <a 
+                href={whatsappUrl} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="group relative flex w-full cursor-pointer items-center justify-center overflow-hidden rounded-xl h-16 px-8 bg-primary hover:bg-[#e0b020] transition-all text-[#181611] gap-3 text-lg font-bold shadow-lg shadow-primary/20 hover:shadow-primary/40">
                 <span className="material-symbols-outlined text-[28px] group-hover:scale-110 transition-transform">chat</span>
                 <span>Order via WhatsApp</span>
-              </button>
+              </a>
               <p className="text-[#8a8060] dark:text-[#8a8060] text-sm text-center">
                 This will open WhatsApp Web if you are on desktop.
               </p>

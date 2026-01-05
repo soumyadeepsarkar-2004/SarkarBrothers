@@ -16,6 +16,20 @@ const translations = {
     'nav.giftbot': 'GiftBot',
     'nav.order_whatsapp': 'Order via WhatsApp',
     'nav.search_placeholder': 'Search for toys, brands, or gifts...',
+    'nav.profile': 'Profile',
+    'nav.products': 'Products',
+    'nav.reviews': 'reviews',
+    'nav.matches': 'matches',
+    'nav.no_products_found': 'No products found for',
+    'nav.view_all_results': 'View all results for',
+    'nav.open_mobile_menu': 'Open mobile menu',
+    'nav.toggle_mobile_search': 'Toggle mobile search',
+    'nav.close_mobile_search': 'Close mobile search',
+    'nav.switch_language': 'Switch language',
+    'nav.login_or_profile': 'Login or view profile',
+    'nav.view_profile_aria': 'View profile for {name}',
+    'nav.view_cart_aria': 'View cart with {count} items',
+    'nav.view_all_results_aria': 'View all search results for {query}',
     
     // Home
     'home.hero.new_arrival': 'New Season Arrivals',
@@ -50,6 +64,8 @@ const translations = {
     'product.free_shipping': 'Free Shipping',
     'product.warranty': '1 Year Warranty',
     'product.returns': 'Easy Returns',
+    'product.add_to_cart_aria': 'Add product to cart',
+    'product.added_to_cart_aria': 'Product added to cart',
 
     // Cart
     'cart.title': 'Your Selection',
@@ -99,7 +115,21 @@ const translations = {
     'nav.giftbot': 'গিফটবট',
     'nav.order_whatsapp': 'হোয়াটসঅ্যাপে অর্ডার',
     'nav.search_placeholder': 'খেলনা, ব্র্যান্ড বা উপহার খুঁজুন...',
-    
+    'nav.profile': 'প্রোফাইল',
+    'nav.products': 'পণ্যসমূহ',
+    'nav.reviews': 'পর্যালোচনা',
+    'nav.matches': 'ম্যাচ',
+    'nav.no_products_found': 'কোনো পণ্য পাওয়া যায়নি',
+    'nav.view_all_results': 'সমস্ত ফলাফল দেখুন',
+    'nav.open_mobile_menu': 'মোবাইল মেনু খুলুন',
+    'nav.toggle_mobile_search': 'মোবাইল অনুসন্ধান টগল করুন',
+    'nav.close_mobile_search': 'মোবাইল অনুসন্ধান বন্ধ করুন',
+    'nav.switch_language': 'ভাষা পরিবর্তন করুন',
+    'nav.login_or_profile': 'লগইন বা প্রোফাইল দেখুন',
+    'nav.view_profile_aria': '{name} এর প্রোফাইল দেখুন',
+    'nav.view_cart_aria': '{count} টি আইটেম সহ কার্ট দেখুন',
+    'nav.view_all_results_aria': '{query} এর জন্য সমস্ত অনুসন্ধান ফলাফল দেখুন',
+
     // Home
     'home.hero.new_arrival': 'নতুন কালেকশন',
     'home.hero.title_1': 'উন্মোচন করুন',
@@ -133,6 +163,8 @@ const translations = {
     'product.free_shipping': 'ফ্রি শিপিং',
     'product.warranty': '১ বছরের ওয়ারেন্টি',
     'product.returns': 'সহজ রিটার্ন',
+    'product.add_to_cart_aria': 'পণ্য কার্টে যোগ করুন',
+    'product.added_to_cart_aria': 'পণ্য কার্টে যোগ করা হয়েছে',
 
     // Cart
     'cart.title': 'আপনার ঝুড়ি',
@@ -183,9 +215,15 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [language, setLanguage] = useState<Language>('en');
 
-  const t = (key: string): string => {
+  const t = (key: string, replacements?: Record<string, string | number>): string => {
     // @ts-ignore
-    return translations[language][key] || key;
+    let translation = translations[language][key] || key;
+    if (replacements) {
+      for (const placeholder in replacements) {
+        translation = translation.replace(`{${placeholder}}`, String(replacements[placeholder]));
+      }
+    }
+    return translation;
   };
 
   return (

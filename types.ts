@@ -19,13 +19,23 @@ export interface CartItem extends Product {
   quantity: number;
 }
 
+export interface OrderItem {
+  productId: string;
+  name: string;
+  image: string;
+  quantity: number;
+  price: number;
+}
+
 export interface Order {
   id: string;
   date: string;
-  items: string[];
+  customerName: string;
+  customerEmail: string;
+  items: OrderItem[];
   total: number;
   status: 'Processing' | 'Shipped' | 'Delivered';
-  thumbnails: string[];
+  shippingAddress: Address;
   paymentMethod: string;
 }
 
@@ -42,4 +52,32 @@ export interface Address {
     lat: number;
     lng: number;
   };
+}
+
+export interface UserProfile {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  avatar: string;
+  bio: string;
+  preferences: {
+    newsletter: boolean;
+    smsNotifications: boolean;
+  };
+}
+
+export type UserRole = 'user' | 'admin';
+
+export interface AuthUser extends UserProfile {
+  role: UserRole;
+}
+
+export interface AuthContextType {
+  isAuthenticated: boolean;
+  user: AuthUser | null;
+  role: UserRole | null;
+  login: (email: string, pass: string) => Promise<boolean>;
+  logout: () => void;
+  loading: boolean;
 }

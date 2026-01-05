@@ -84,92 +84,48 @@ const LiveMap: React.FC = () => {
     );
 };
 
-const OrderTracker: React.FC<OrderTrackerProps> = ({ status }) => {
-    // Mock Timeline Data
-    const timeline = [
-        { time: '09:30 AM', date: 'Today', status: 'Out for Delivery', location: 'Local Hub, Springfield', current: status === 'Shipped' },
-        { time: '06:15 AM', date: 'Today', status: 'Arrived at Facility', location: 'Distribution Center, Springfield', current: false },
-        { time: '08:45 PM', date: 'Yesterday', status: 'In Transit', location: 'Central Cargo, Chicago', current: false },
-        { time: '04:30 PM', date: 'Yesterday', status: 'Shipped', location: 'ToyWonder Warehouse', current: false },
-        { time: '02:00 PM', date: 'Oct 24', status: 'Order Confirmed', location: 'Online Store', current: false },
-    ];
 
-    // Filter timeline based on status for realism
-    const visibleTimeline = status === 'Processing' 
-        ? timeline.slice(4) 
-        : status === 'Delivered' 
-            ? [{ time: '10:45 AM', date: 'Today', status: 'Delivered', location: 'Front Door', current: true }, ...timeline] 
-            : timeline;
+const OrderTracker: React.FC<OrderTrackerProps> = ({ status }) => {
+    const statuses = ['Processing', 'Shipped', 'Delivered'];
+    const currentStatusIndex = statuses.indexOf(status);
 
     return (
-        <div className="w-full">
-            {/* Horizontal Status Bar */}
-            <div className="flex items-center justify-between mb-8 relative px-2">
-                <div className="absolute left-0 top-1/2 w-full h-1 bg-gray-200 dark:bg-[#332f20] -z-10 rounded-full"></div>
-                <div className={`absolute left-0 top-1/2 h-1 bg-primary -z-10 rounded-full transition-all duration-1000`} 
-                     style={{ width: status === 'Delivered' ? '100%' : status === 'Shipped' ? '66%' : '33%' }}>
-                </div>
-
-                {['Ordered', 'Processing', 'Shipped', 'Delivered'].map((step, i) => {
-                    const isCompleted = 
-                        (status === 'Processing' && i <= 1) ||
-                        (status === 'Shipped' && i <= 2) ||
-                        (status === 'Delivered' && i <= 3);
-                    
-                    const isCurrent = 
-                        (status === 'Processing' && i === 1) ||
-                        (status === 'Shipped' && i === 2) ||
-                        (status === 'Delivered' && i === 3);
-
-                    return (
-                        <div key={step} className="flex flex-col items-center gap-2 bg-background-light dark:bg-background-dark px-2">
-                             <div className={`size-8 rounded-full flex items-center justify-center border-2 transition-all duration-500 ${isCompleted ? 'bg-primary border-primary text-[#181611]' : 'bg-white dark:bg-[#252525] border-gray-300 dark:border-gray-600 text-gray-300'}`}>
-                                 {isCompleted ? <span className="material-symbols-outlined text-sm font-bold">check</span> : <div className="size-2 rounded-full bg-gray-300"></div>}
-                             </div>
-                             <span className={`text-xs font-bold ${isCurrent ? 'text-primary' : 'text-gray-500'}`}>{step}</span>
-                        </div>
-                    );
-                })}
+        <div className="space-y-6">
+            <div className="flex justify-between items-center text-sm font-bold text-gray-500 dark:text-gray-400">
+                {statuses.map((s, i) => (
+                    <span key={s} className={`flex-1 text-center ${i <= currentStatusIndex ? 'text-primary dark:text-yellow-400' : ''}`}>
+                        {s}
+                    </span>
+                ))}
             </div>
-
-            {/* Live Map for Shipped Status */}
-            {status === 'Shipped' && (
-                <div className="animate-[fadeIn_0.5s_ease-out]">
-                    <div className="flex items-center justify-between mb-3">
-                        <h4 className="font-bold text-[#181611] dark:text-white flex items-center gap-2">
-                            <span className="relative flex h-3 w-3">
-                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                              <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
-                            </span>
-                            Live Tracking
-                        </h4>
-                        <span className="text-xs font-bold text-primary bg-primary/10 px-2 py-1 rounded">Est. Delivery: Today, 2 PM</span>
-                    </div>
-                    <LiveMap />
-                </div>
-            )}
-
-            {/* Detailed Timeline */}
-            <div className="mt-8 space-y-6 relative pl-2">
-                <div className="absolute top-2 bottom-2 left-[19px] w-0.5 bg-gray-200 dark:bg-[#332f20]"></div>
-                
-                {visibleTimeline.map((log, idx) => (
-                    <div key={idx} className={`relative flex gap-6 ${log.current ? 'opacity-100' : 'opacity-70'}`}>
-                        <div className={`relative z-10 size-10 rounded-full border-4 flex items-center justify-center shrink-0 bg-white dark:bg-[#1a170d] ${log.current ? 'border-primary text-primary' : 'border-gray-200 dark:border-[#332f20] text-gray-400'}`}>
-                            <span className="material-symbols-outlined text-[18px]">
-                                {log.status.includes('Delivered') ? 'check_circle' : 
-                                 log.status.includes('Out') ? 'local_shipping' : 
-                                 log.status.includes('Transit') ? 'flight' : 'inventory_2'}
-                            </span>
-                        </div>
-                        <div className="flex-1 pt-1">
-                            <h5 className={`font-bold text-sm ${log.current ? 'text-[#181611] dark:text-white' : 'text-gray-600 dark:text-gray-400'}`}>{log.status}</h5>
-                            <p className="text-xs text-gray-500 mb-1">{log.location}</p>
-                            <span className="text-[10px] font-medium text-gray-400 bg-gray-100 dark:bg-[#252525] px-2 py-0.5 rounded">{log.date} • {log.time}</span>
-                        </div>
+            <div className="relative flex items-center h-2 bg-gray-200 dark:bg-gray-700 rounded-full">
+                <div
+                    className="absolute h-2 bg-primary rounded-full transition-all duration-500 ease-in-out"
+                    style={{ width: `${(currentStatusIndex / (statuses.length - 1)) * 100}%` }}
+                ></div>
+                {statuses.map((s, i) => (
+                    <div
+                        key={s}
+                        className={`absolute flex items-center justify-center size-5 rounded-full border-2 transition-all duration-500 ease-in-out ${
+                            i <= currentStatusIndex
+                                ? 'bg-primary border-primary'
+                                : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600'
+                        }`}
+                        style={{ left: `${(i / (statuses.length - 1)) * 100}%`, transform: 'translateX(-50%)' }}
+                    >
+                        {i < currentStatusIndex ? (
+                            <span className="material-symbols-outlined text-white text-[12px]">check</span>
+                        ) : i === currentStatusIndex ? (
+                            <span className="material-symbols-outlined text-white text-[12px]">local_shipping</span>
+                        ) : null}
                     </div>
                 ))}
             </div>
+            {status === 'Shipped' && (
+                <div className="p-4 bg-primary/5 dark:bg-primary/10 rounded-xl border border-primary/20">
+                    <LiveMap />
+                </div>
+            )}
         </div>
     );
 };

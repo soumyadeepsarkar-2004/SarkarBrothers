@@ -1,4 +1,5 @@
 
+
 import React, { useState, useRef, useEffect } from 'react';
 import { generateGiftSuggestions } from '../services/gemini';
 import { products } from '../data';

@@ -5,6 +5,7 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const { GoogleGenAI } = require("@google/genai");
 const { User, Product, Order } = require('./models');
+const { mockUsers, orders: mockOrders } = require('../data'); // Import mockUsers and orders from data.ts
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -59,33 +60,36 @@ app.get('/api/products/:id', async (req, res) => {
 });
 
 // 2. User/Profile API (Mock Auth middleware assumed)
+// In a real app, this would be authenticated and return the profile of the logged-in user
 app.get('/api/user/profile', async (req, res) => {
-  // In real app: const userId = req.user.id;
-  const userId = "sample_user_id"; 
-  // Return mock data if DB empty for demo purposes
-  const user = await User.findOne({ email: 'sarah.jenkins@example.com' });
-  if (!user) {
-      return res.json({
-        name: 'Sarah Jenkins',
-        email: 'sarah.jenkins@example.com',
-        phone: '+91 98765 43210',
-        avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCU0jVydwO_BzTasvf11ZjkOxK8TbjCy26l_NVLd7PCYz5fcpsIcCX0IWjQPee7kNU9ypCADDv93ImEfaUWsAO3Ha6tcoyTx2cNGdiHRVR5nFj_qD4xiAh6brmbK9hnGVewKil-RoO4ecMGWEz37ZPkRZeINF_Gkn9U3tR8wF_ZWe5nadbzxcCHZ_7ahlTrqxZuf6bygLSwVWRdoNNFc9de4UGhOOx7qQ-uTTKwIMZoZVLiZwaQ-omKY8I7rDpduCsl3lTAPJM3AC2v',
-        bio: 'Mom of two lovely energetic kids. Love finding educational toys!',
-        preferences: { newsletter: true, smsNotifications: false }
-      });
+  const { email } = req.query; // Assume email is passed for mock lookup
+  if (email && mockUsers[email]) {
+    return res.json(mockUsers[email]);
   }
-  res.json(user);
+  // Fallback to a generic profile or error if no email/user found
+  return res.status(404).json({ message: 'Profile not found or not logged in' });
 });
 
 app.put('/api/user/profile', async (req, res) => {
   // const userId = req.user.id;
   // const updatedUser = await User.findByIdAndUpdate(userId, req.body, { new: true });
-  res.json(req.body); // Echo back for demo
+  // For mock: just echo back the updated data
+  const { email } = req.body;
+  if (email && mockUsers[email]) {
+    mockUsers[email] = { ...mockUsers[email], ...req.body }; // Update mock user
+    return res.json(mockUsers[email]);
+  }
+  res.status(404).json({ message: 'Profile not found or not authorized' });
 });
 
 app.get('/api/user/orders', async (req, res) => {
-    // Return mock orders for demo if DB empty
-    res.json([]); 
+    const { email } = req.query; // Assume email is passed for mock lookup
+    if (email) {
+        // Return mock orders for the specific user
+        const userOrders = mockOrders.filter(order => order.customerEmail === email);
+        return res.json(userOrders.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+    }
+    res.status(404).json({ message: 'Orders not found for this user' });
 });
 
 // 3. AI Assistant & Recommendations API 
@@ -99,7 +103,7 @@ app.post('/api/ai/chat', async (req, res) => {
     
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      contents: message,
+      contents: [{ text: message }], // Corrected format
       config: { systemInstruction: systemPrompt }
     });
 
@@ -131,7 +135,7 @@ app.post('/api/ai/recommend', async (req, res) => {
 
         const response = await ai.models.generateContent({
             model: 'gemini-3-flash-preview',
-            contents: prompt
+            contents: [{ text: prompt }] // Corrected format
         });
 
         const suggestedCategories = response.text.split(',').map(s => s.trim());

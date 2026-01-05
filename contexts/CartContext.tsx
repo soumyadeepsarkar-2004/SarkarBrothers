@@ -1,6 +1,6 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { CartItem, Product } from '../types';
-import { products } from '../data';
 
 interface CartContextType {
   items: CartItem[];
@@ -15,12 +15,7 @@ interface CartContextType {
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Initialize with some mock data matching previous Cart.tsx
-  const [items, setItems] = useState<CartItem[]>([
-    { ...products[8], quantity: 1 }, // Rainbow Stacker
-    { ...products[5], quantity: 1 }, // Train
-    { ...products[0], quantity: 1 }, // RC Car
-  ]);
+  const [items, setItems] = useState<CartItem[]>([]);
 
   const addToCart = (product: Product, quantity: number = 1) => {
     setItems(prev => {

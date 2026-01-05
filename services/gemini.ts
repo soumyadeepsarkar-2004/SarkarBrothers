@@ -29,7 +29,7 @@ export const generateGiftSuggestions = async (
 
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      contents: prompt,
+      contents: [{ text: prompt }], // Corrected format
     });
 
     return response.text || (language === 'bn' ? "দুঃখিত, আমি এই মুহূর্তে কোন আইডিয়া পাচ্ছি না।" : "I'm having a little trouble thinking of ideas right now. 🎁");

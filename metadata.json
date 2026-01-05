@@ -1,5 +1,7 @@
 {
   "name": "ToyWonder Shop",
   "description": "A premium toy and gift shop experience featuring an AI gift assistant, WhatsApp ordering, and a comprehensive product catalog.",
-  "requestFramePermissions": []
+  "requestFramePermissions": [
+    "geolocation"
+  ]
 }

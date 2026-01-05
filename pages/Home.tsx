@@ -1,15 +1,72 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { products } from '../data';
 import { useCart } from '../contexts/CartContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { formatPrice } from '../utils/formatters';
 
+// VideoModal Component
+const VideoModal: React.FC<{ isOpen: boolean; onClose: () => void; videoUrl: string }> = ({ isOpen, onClose, videoUrl }) => {
+  if (!isOpen) return null;
+
+  // Stop video playback when modal closes
+  const handleClose = () => {
+    onClose();
+    const iframe = document.querySelector('.video-modal iframe') as HTMLIFrameElement;
+    if (iframe && iframe.contentWindow) {
+      iframe.contentWindow.postMessage('{"event":"command","func":"stopVideo","args":""}', '*');
+    }
+  };
+
+  // Close on Escape key press
+  React.useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        handleClose();
+      }
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, []);
+
+  return (
+    <div 
+      className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-[fadeIn_0.2s_ease-out]"
+      onClick={handleClose}
+    >
+      <div 
+        className="relative w-full max-w-4xl aspect-video bg-white dark:bg-gray-800 rounded-lg shadow-2xl overflow-hidden border border-gray-700"
+        onClick={e => e.stopPropagation()} // Prevent closing when clicking on the video container
+      >
+        <button 
+          onClick={handleClose} 
+          className="absolute -top-3 -right-3 size-9 flex items-center justify-center rounded-full bg-red-500 text-white z-10 shadow-lg hover:bg-red-600 transition-colors"
+        >
+          <span className="material-symbols-outlined text-lg">close</span>
+        </button>
+        <iframe
+          className="w-full h-full video-modal"
+          src={`${videoUrl}?autoplay=1&mute=1&rel=0`} // Changed mute=0 to mute=1 for reliable autoplay due to browser policies
+          frameBorder="0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allowFullScreen
+          title="Product Video"
+        ></iframe>
+      </div>
+    </div>
+  );
+};
+
+
 const Home: React.FC = () => {
   const trendingProducts = products.slice(0, 4);
   const { addToCart } = useCart();
   const { t } = useLanguage();
+  const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
+
+  // Mock YouTube video URL changed to a generic toy video for reliable embedding
+  const VIDEO_URL = "https://www.youtube.com/embed/y-M2a8rW22Y"; // Generic Kids Toy Review/Animation
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -38,7 +95,10 @@ const Home: React.FC = () => {
                   {t('home.explore')}
                   <span className="material-symbols-outlined text-sm">arrow_forward</span>
                 </Link>
-                <button className="h-12 px-8 rounded-lg bg-white dark:bg-[#2a261a] border border-gray-200 dark:border-gray-700 hover:border-primary text-[#181611] dark:text-white font-semibold text-base transition-colors flex items-center gap-2">
+                <button 
+                    onClick={() => setIsVideoModalOpen(true)}
+                    className="h-12 px-8 rounded-lg bg-white dark:bg-[#2a261a] border border-gray-200 dark:border-gray-700 hover:border-primary text-[#181611] dark:text-white font-semibold text-base transition-colors flex items-center gap-2"
+                >
                   <span className="material-symbols-outlined text-red-500 fill-current" style={{ fontVariationSettings: "'FILL' 1" }}>play_circle</span>
                   {t('home.watch_video')}
                 </button>
@@ -47,7 +107,7 @@ const Home: React.FC = () => {
             
             <div className="flex-1 w-full max-w-[600px] lg:max-w-none relative">
               <div className="aspect-[4/3] rounded-2xl overflow-hidden shadow-2xl bg-gray-100 dark:bg-gray-800 relative group">
-                <div className="w-full h-full bg-center bg-cover transition-transform duration-700 group-hover:scale-105" style={{ backgroundImage: 'url("https://lh3.googleusercontent.com/aida-public/AB6AXuAAAqFXw8ePtjTKTtlAt54AqjdedZGN9pSEt4Xt_Gm1rQTJ3MpR8Ce-_lWwNUoe5EzvkmjiJFcY5Ul1xjzb6xWm2Uqi7VuL7zSkO-tdk6EiRxKmlgA3WftmyhygOUriDZIceq4dy7wctrSuikPE8NAkjQ9JmqS2ME6mqokjm8RU17VqbQ8VDLNhrkAL-Nv_2tkjPzvIYD8TwvVrcMXp29vXTFU9ObvotbShx2vD9TbQYqw1mcvNCdaS1SZ8yxVQTq12ijsGM-_PTcA1")' }}></div>
+                <div className="w-full h-full bg-center bg-cover transition-transform duration-700 group-hover:scale-105" style={{ backgroundImage: 'url("https://images.unsplash.com/photo-1628006121703-e8470a794f83?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D")' }}></div>
                 <div className="absolute bottom-6 left-6 right-6 p-4 bg-white/90 dark:bg-black/80 backdrop-blur-sm rounded-xl border border-white/20 shadow-lg flex items-center justify-between">
                   <div>
                     <p className="text-xs text-gray-500 dark:text-gray-400 uppercase font-bold">Featured</p>
@@ -159,6 +219,13 @@ const Home: React.FC = () => {
           </span>
         </Link>
       </div>
+      
+      {/* Video Modal */}
+      <VideoModal 
+        isOpen={isVideoModalOpen} 
+        onClose={() => setIsVideoModalOpen(false)} 
+        videoUrl={VIDEO_URL} 
+      />
     </div>
   );
 };

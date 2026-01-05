@@ -4,9 +4,10 @@ import { api } from '../services/api';
 import { useWishlist } from '../contexts/WishlistContext';
 import { useCart } from '../contexts/CartContext';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useAuth } from '../contexts/AuthContext'; // Relative import
 import { formatPrice } from '../utils/formatters';
-import { Link } from 'react-router-dom';
-import { Product, Address, Order } from '../types';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom'; // Import useNavigate
+import { Product, Address, Order, UserProfile } from '../types';
 import { products } from '../data';
 import OrderTracker from '../components/OrderTracker'; // Import tracker
 
@@ -117,7 +118,6 @@ const MapPicker: React.FC<{
                             onClick={onCancel}
                             className="flex-1 py-3 px-4 rounded-xl border border-[#e6e3db] dark:border-[#332f20] font-bold text-[#181611] dark:text-white hover:bg-gray-50 dark:hover:bg-[#252525] transition-colors"
                         >
-                            {/* @ts-ignore */}
                             Cancel
                         </button>
                         <button 
@@ -133,58 +133,141 @@ const MapPicker: React.FC<{
     );
 };
 
+// New: Order Details Modal component
+const OrderDetailsModal: React.FC<{ order: Order; onClose: () => void }> = ({ order, onClose }) => {
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={onClose}>
+            <div className="bg-white dark:bg-[#1a170d] rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl animate-[fadeIn_0.2s_ease-out]" onClick={e => e.stopPropagation()}>
+                <div className="p-6 border-b border-[#e6e3db] dark:border-[#332f20] flex justify-between items-center sticky top-0 bg-white dark:bg-[#1a170d] z-10">
+                    <h3 className="text-2xl font-bold text-[#181611] dark:text-white">Order {order.id} Details</h3>
+                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                        <span className="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+                <div className="p-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                        <div>
+                            <p className="text-sm text-gray-500 dark:text-gray-400 uppercase font-bold mb-2">Customer Info</p>
+                            <p className="font-bold text-[#181611] dark:text-white">{order.customerName}</p>
+                            <p className="text-sm text-gray-600 dark:text-gray-300">{order.customerEmail}</p>
+                        </div>
+                        <div>
+                            <p className="text-sm text-gray-500 dark:text-gray-400 uppercase font-bold mb-2">Shipping Address</p>
+                            <p className="font-bold text-[#181611] dark:text-white">{order.shippingAddress.name}</p>
+                            <p className="text-sm text-gray-600 dark:text-gray-300">{order.shippingAddress.street}</p>
+                            <p className="text-sm text-gray-600 dark:text-gray-300">{order.shippingAddress.city}, {order.shippingAddress.state} {order.shippingAddress.zip}</p>
+                            <p className="text-sm text-gray-600 dark:text-gray-300">{order.shippingAddress.country}</p>
+                        </div>
+                    </div>
+
+                    <h4 className="text-lg font-bold text-[#181611] dark:text-white mb-4">Items Ordered</h4>
+                    <div className="space-y-4 mb-8">
+                        {order.items.map(item => (
+                            <div key={item.productId} className="flex items-center gap-4 bg-[#f5f3f0] dark:bg-[#2a261a] p-4 rounded-xl border border-[#e6e3db] dark:border-[#332f20]">
+                                <img src={item.image} alt={item.name} className="w-16 h-16 object-cover rounded-lg flex-shrink-0" />
+                                <div className="flex-1">
+                                    <p className="font-bold text-[#181611] dark:text-white">{item.name}</p>
+                                    <p className="text-sm text-[#8a8060] dark:text-gray-400">Qty: {item.quantity} • {formatPrice(item.price)} each</p>
+                                </div>
+                                <span className="font-bold text-lg text-primary">{formatPrice(item.quantity * item.price)}</span>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="flex justify-between items-center border-t border-[#e6e3db] dark:border-[#332f20] pt-4">
+                        <span className="text-xl font-bold text-[#181611] dark:text-white">Total</span>
+                        <span className="text-3xl font-extrabold text-primary">{formatPrice(order.total)}</span>
+                    </div>
+
+                    <h4 className="text-lg font-bold text-[#181611] dark:text-white mt-8 mb-4">Tracking Information</h4>
+                    <OrderTracker status={order.status} />
+                </div>
+            </div>
+        </div>
+    );
+};
+
 const Profile: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'active' | 'past' | 'wishlist' | 'profile' | 'addresses'>('active');
   const { wishlist, toggleWishlist } = useWishlist();
   const { addToCart } = useCart();
   const { t } = useLanguage();
+  const { isAuthenticated, user, logout } = useAuth(); // Use AuthContext
+  const navigate = useNavigate(); // For redirection
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
   
   // Wishlist specific state
   const [sortOption, setSortOption] = useState<string>('default');
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
-  const [showShareToast, setShowShareToast] = useState(false);
+  const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
 
   // Async Data State
   const [loading, setLoading] = useState(true);
   const [orders, setOrders] = useState<Order[]>([]);
-  const [userProfile, setUserProfile] = useState<any>({
-    name: 'Loading...',
-    email: '',
-    phone: '',
-    avatar: '',
-    bio: '',
-    preferences: {}
+  // Use AuthContext user as default, then allow local edits
+  const [userProfile, setUserProfile] = useState<UserProfile>(user || {
+    id: '', name: 'Guest', email: '', phone: '', avatar: '', bio: '', preferences: { newsletter: false, smsNotifications: false }
   });
   const [addresses, setAddresses] = useState<Address[]>([]);
-  const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
+  const [expandedOrder, setExpandedOrder] = useState<string | null>(null); // For active order tracker expansion
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null); // For detailed order modal
 
   // Form States
   const [isEditingProfile, setIsEditingProfile] = useState(false);
-  const [profileForm, setProfileForm] = useState(userProfile);
+  const [profileForm, setProfileForm] = useState<UserProfile>(userProfile); // Initialize with userProfile
   const [addressModal, setAddressModal] = useState<{ open: boolean; step: 'map' | 'form' }>({ open: false, step: 'map' });
   const [editingAddress, setEditingAddress] = useState<Address | null>(null);
   const [addressForm, setAddressForm] = useState<Partial<Address>>({});
 
-  // Initial Data Fetch
+  // Redirect if not authenticated
   useEffect(() => {
+    if (!isAuthenticated) {
+      navigate('/');
+      displayToast('Please log in to view your profile.');
+    }
+  }, [isAuthenticated, navigate]);
+
+
+  const displayToast = (msg: string) => {
+      setToastMessage(msg);
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+  };
+
+  // Initial Data Fetch & Order Success Toast
+  useEffect(() => {
+    // Only fetch if authenticated AND user email is available
+    if (!isAuthenticated || !user?.email) {
+        setLoading(false); // Ensure loading is false if not authenticated/no email
+        return; 
+    }
+
     const fetchData = async () => {
         setLoading(true);
         try {
-            const [profileData, ordersData] = await Promise.all([
-                api.user.getProfile(),
-                api.user.getOrders()
-            ]);
-            setUserProfile(profileData);
-            setProfileForm(profileData);
+            // User profile is now from AuthContext, but we can fetch addresses and orders
+            const ordersData = await api.user.getOrders(user.email); // Pass user.email
             setOrders(ordersData);
-            
-            // Hardcoded addresses for now as API might not return them in mock
             setAddresses([
                 { id: '1', name: 'Home', street: '123 Maple Avenue', city: 'Springfield', state: 'IL', zip: '62704', country: 'United States', isDefault: true, coordinates: { lat: 39.7817, lng: -89.6501 } },
                 { id: '2', name: 'Work', street: '456 Tech Blvd, Suite 200', city: 'Chicago', state: 'IL', zip: '60601', country: 'United States', isDefault: false, coordinates: { lat: 41.8781, lng: -87.6298 } }
             ]);
+
+             // Check for order success from URL
+            if (searchParams.get('order_success') === 'true') {
+                displayToast('🎉 Your order has been placed successfully!');
+                // Expand the newest order
+                if (ordersData.length > 0) {
+                    setExpandedOrder(ordersData[0].id);
+                    setActiveTab('active'); // Switch to active orders tab
+                }
+                // Clean up URL
+                searchParams.delete('order_success');
+                setSearchParams(searchParams);
+            }
+
         } catch (e) {
             console.error("Failed to fetch profile data", e);
         } finally {
@@ -192,7 +275,16 @@ const Profile: React.FC = () => {
         }
     };
     fetchData();
-  }, []);
+  }, [isAuthenticated, user?.email, searchParams, setSearchParams]); // Depend on isAuthenticated and user.email
+
+
+  // Update profileForm if AuthContext user changes
+  useEffect(() => {
+    if (user) {
+      setUserProfile(user);
+      setProfileForm(user);
+    }
+  }, [user]);
 
   const activeOrders = orders.filter(o => o.status !== 'Delivered');
   const pastOrders = orders.filter(o => o.status === 'Delivered');
@@ -209,19 +301,12 @@ const Profile: React.FC = () => {
     });
   }, [wishlist, sortOption]);
 
-  const showToast = (msg: string) => {
-      setToastMessage(msg);
-      setShowShareToast(true);
-      setTimeout(() => setShowShareToast(false), 3000);
-  };
-
   const handleShareWishlist = () => {
-      // Create a shareable link (mock)
       const url = `${window.location.origin}/#/shop?wishlist=${userProfile.id || 'shared'}`;
       navigator.clipboard.writeText(url).then(() => {
-          showToast("Wishlist link copied to clipboard!");
+          displayToast("Wishlist link copied to clipboard!");
       }).catch(() => {
-          showToast("Copied: " + url);
+          displayToast("Copied: " + url);
       });
   };
 
@@ -233,7 +318,7 @@ const Profile: React.FC = () => {
           reader.onloadend = () => {
               const result = reader.result as string;
               setProfileForm(prev => ({ ...prev, avatar: result }));
-              showToast("Image selected. Save to apply.");
+              displayToast("Image selected. Save to apply.");
           };
           reader.readAsDataURL(file);
       }
@@ -242,12 +327,13 @@ const Profile: React.FC = () => {
   const handleSaveProfile = async (e: React.FormEvent) => {
       e.preventDefault();
       try {
+          // Assuming updateProfile API returns the updated profile
           const updated = await api.user.updateProfile(profileForm);
           setUserProfile(updated);
           setIsEditingProfile(false);
-          showToast('Profile updated successfully!');
+          displayToast('Profile updated successfully!');
       } catch (err) {
-          showToast('Failed to update profile.');
+          displayToast('Failed to update profile.');
       }
   };
 
@@ -267,7 +353,7 @@ const Profile: React.FC = () => {
   const handleDeleteAddress = (id: string) => {
       if (window.confirm('Are you sure you want to delete this address?')) {
           setAddresses(prev => prev.filter(a => a.id !== id));
-          showToast('Address deleted.');
+          displayToast('Address deleted.');
       }
   };
 
@@ -289,11 +375,11 @@ const Profile: React.FC = () => {
 
       if (editingAddress) {
           setAddresses(prev => prev.map(a => a.id === editingAddress.id ? { ...a, ...addressForm, isDefault: addressForm.isDefault || (prev.length === 1) } as Address : a));
-          showToast('Address updated.');
+          displayToast('Address updated.');
       } else {
           const newId = Math.random().toString(36).substr(2, 9);
           setAddresses(prev => [...prev, { ...addressForm, id: newId, isDefault: addressForm.isDefault || prev.length === 0 } as Address]);
-          showToast('New address added.');
+          displayToast('New address added.');
       }
       setAddressModal({ open: false, step: 'map' });
   };
@@ -423,6 +509,13 @@ const Profile: React.FC = () => {
                                 <span className="material-symbols-outlined">shopping_bag</span>
                                 {t('product.add_to_cart')}
                             </button>
+                             <Link 
+                                to={`/product/${quickViewProduct.id}`}
+                                onClick={() => setQuickViewProduct(null)} // Close modal when navigating
+                                className="w-full border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-[#252525] text-[#181611] dark:text-white font-semibold py-3 rounded-xl transition-colors flex items-center justify-center text-sm"
+                            >
+                                View Details
+                            </Link>
                         </div>
                     </div>
                 </div>
@@ -430,6 +523,10 @@ const Profile: React.FC = () => {
         </div>
     );
   };
+
+  if (!isAuthenticated) {
+    return null; // Redirect handled by useEffect
+  }
 
   if (loading) {
       return (
@@ -447,244 +544,289 @@ const Profile: React.FC = () => {
       <div className="layout-container flex h-full grow w-full max-w-[1440px] mx-auto">
         {/* Sidebar */}
         <aside className="hidden lg:flex flex-col w-[280px] bg-white dark:bg-[#1a170d] border-r border-[#e6e3db] dark:border-[#332f20] h-full overflow-y-auto">
-          <div className="flex flex-col h-full justify-between p-6">
-            <div className="flex flex-col gap-6">
-              <div className="flex items-center gap-3 pb-6 border-b border-[#e6e3db] dark:border-[#332f20]">
-                <div className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-12 ring-2 ring-primary relative group cursor-pointer" onClick={() => setActiveTab('profile')}>
-                    <div style={{ backgroundImage: `url("${userProfile.avatar}")` }} className="w-full h-full rounded-full bg-cover bg-center"></div>
-                </div>
-                <div className="flex flex-col">
-                  <h1 className="text-[#181611] dark:text-white text-base font-bold leading-normal truncate max-w-[150px]">{userProfile.name}</h1>
-                  <span className="text-[10px] text-gray-400">Completion: 80%</span>
-                </div>
-              </div>
-              <div className="flex flex-col gap-2">
-                <button onClick={() => setActiveTab('profile')} className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors w-full text-left ${activeTab === 'profile' ? 'bg-primary/10 text-primary' : 'text-[#181611] dark:text-white hover:bg-[#f5f3f0] dark:hover:bg-[#2c281b]'}`}>
-                  <span className="material-symbols-outlined fill-current">person</span>
-                  <p className="text-sm font-medium leading-normal">{t('profile.tab.profile')}</p>
-                </button>
-                <button onClick={() => setActiveTab('active')} className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors w-full text-left ${activeTab === 'active' || activeTab === 'past' ? 'bg-primary/10 text-primary' : 'text-[#181611] dark:text-white hover:bg-[#f5f3f0] dark:hover:bg-[#2c281b]'}`}>
-                  <span className="material-symbols-outlined fill-current">inventory_2</span>
-                  <p className="text-sm font-bold leading-normal">{t('profile.tab.active')}</p>
-                </button>
-                <button onClick={() => setActiveTab('wishlist')} className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors w-full text-left ${activeTab === 'wishlist' ? 'bg-primary/10 text-primary' : 'text-[#181611] dark:text-white hover:bg-[#f5f3f0] dark:hover:bg-[#2c281b]'}`}>
-                    <span className="material-symbols-outlined fill-current">favorite</span>
-                    <p className="text-sm font-medium leading-normal">{t('profile.tab.wishlist')}</p>
-                </button>
-                <button onClick={() => setActiveTab('addresses')} className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors w-full text-left ${activeTab === 'addresses' ? 'bg-primary/10 text-primary' : 'text-[#181611] dark:text-white hover:bg-[#f5f3f0] dark:hover:bg-[#2c281b]'}`}>
-                    <span className="material-symbols-outlined fill-current">location_on</span>
-                    <p className="text-sm font-medium leading-normal">{t('profile.tab.addresses')}</p>
-                </button>
-              </div>
-            </div>
-            <div className="flex flex-col gap-1 pt-6 border-t border-[#e6e3db] dark:border-[#332f20]">
-                <button className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors w-full text-left">
-                    <span className="material-symbols-outlined">logout</span>
-                    <p className="text-sm font-medium leading-normal">{t('profile.logout')}</p>
-                </button>
-            </div>
+          <div className="p-6 border-b border-[#e6e3db] dark:border-[#332f20]">
+            <img className="size-24 rounded-full mx-auto mb-4 object-cover" src={userProfile.avatar} alt={userProfile.name} />
+            <h2 className="text-center text-xl font-bold text-[#181611] dark:text-white">{userProfile.name}</h2>
+            <p className="text-center text-sm text-[#8a8060]">{userProfile.email}</p>
+          </div>
+          <nav className="flex-1 p-6 space-y-2">
+            {(['active', 'past', 'wishlist', 'profile', 'addresses'] as const).map(tab => (
+              <button 
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`w-full flex items-center px-4 py-3 rounded-xl font-medium transition-colors ${
+                  activeTab === tab 
+                    ? 'bg-primary/20 text-primary' 
+                    : 'text-[#8a8060] hover:bg-[#f5f3f0] dark:hover:bg-[#2a261a]'
+                }`}
+              >
+                <span className="material-symbols-outlined mr-3 text-lg">{
+                  tab === 'active' ? 'package_2' :
+                  tab === 'past' ? 'archive' :
+                  tab === 'wishlist' ? 'favorite' :
+                  tab === 'profile' ? 'person' : 'location_on'
+                }</span>
+                {t(`profile.tab.${tab}`)}
+              </button>
+            ))}
+          </nav>
+          <div className="p-6 border-t border-[#e6e3db] dark:border-[#332f20]">
+            <button onClick={logout} className="w-full flex items-center px-4 py-3 rounded-xl font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+              <span className="material-symbols-outlined mr-3 text-lg">logout</span>
+              {t('profile.logout')}
+            </button>
           </div>
         </aside>
 
         {/* Content Area */}
         <section className="flex flex-col flex-1 min-w-0 bg-background-light dark:bg-background-dark overflow-y-auto px-4 md:px-12 py-8">
             <div className="max-w-[1000px] w-full mx-auto flex flex-col gap-8 pb-20">
-                <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
-                    <div className="flex flex-col gap-2">
-                        <h2 className="text-[#181611] dark:text-white tracking-tight text-[32px] font-bold leading-tight">
-                            {activeTab === 'wishlist' ? t('profile.my_wishlist') : 
-                             activeTab === 'profile' ? t('profile.tab.profile') : 
-                             activeTab === 'addresses' ? t('profile.tab.addresses') : t('profile.tab.active')}
-                        </h2>
-                    </div>
-                </div>
-
                 {activeTab === 'profile' && (
-                    <div className="bg-white dark:bg-[#1a170d] rounded-xl border border-[#e6e3db] dark:border-[#332f20] shadow-sm overflow-hidden p-8 animate-[fadeIn_0.3s_ease-out]">
-                        <div className="flex flex-col md:flex-row gap-8 items-start">
-                             <div className="flex flex-col items-center gap-4">
-                                <div className="relative group cursor-pointer" onClick={() => isEditingProfile && fileInputRef.current?.click()}>
-                                    <div className="size-32 rounded-full bg-cover bg-center ring-4 ring-[#f5f3f0] dark:ring-[#2a261a]" style={{ backgroundImage: `url("${userProfile.avatar}")` }}></div>
-                                    <div className={`absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity ${isEditingProfile ? 'cursor-pointer' : ''}`}>
-                                        <span className="material-symbols-outlined text-white">{isEditingProfile ? 'photo_camera' : 'lock'}</span>
-                                    </div>
-                                    <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleProfileImageUpload} />
+                    <div className="bg-white dark:bg-[#1a170d] rounded-2xl shadow-sm border border-[#e6e3db] dark:border-[#332f20] p-6">
+                        <h2 className="text-2xl font-bold mb-6 text-[#181611] dark:text-white">My Profile</h2>
+                        <form onSubmit={handleSaveProfile} className="space-y-6">
+                            <div className="flex items-center gap-6">
+                                <div className="relative size-24 rounded-full border border-[#e6e3db] dark:border-[#332f20] overflow-hidden group">
+                                    <img src={profileForm.avatar} alt="Profile" className="size-full object-cover" />
+                                    <button type="button" onClick={() => fileInputRef.current?.click()} className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white text-xs font-bold flex-col gap-1">
+                                        <span className="material-symbols-outlined text-xl">camera_alt</span>
+                                        Change
+                                    </button>
+                                    <input type="file" ref={fileInputRef} onChange={handleProfileImageUpload} className="hidden" accept="image/*" />
                                 </div>
-                             </div>
-
-                             <form className="flex-1 w-full flex flex-col gap-6" onSubmit={handleSaveProfile}>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="flex flex-col gap-2">
-                                        <label className="text-sm font-bold text-[#181611] dark:text-white">Full Name</label>
-                                        <input type="text" value={profileForm.name} onChange={e => setProfileForm({...profileForm, name: e.target.value})} disabled={!isEditingProfile} className="w-full px-4 py-2.5 rounded-lg border border-[#e6e3db] dark:border-[#332f20] bg-[#f5f3f0] dark:bg-[#252525] text-[#181611] dark:text-white focus:ring-2 focus:ring-primary outline-none disabled:opacity-70 disabled:cursor-not-allowed" />
-                                    </div>
-                                    <div className="flex flex-col gap-2">
-                                        <label className="text-sm font-bold text-[#181611] dark:text-white">Email Address</label>
-                                        <input type="email" value={profileForm.email} onChange={e => setProfileForm({...profileForm, email: e.target.value})} disabled={!isEditingProfile} className="w-full px-4 py-2.5 rounded-lg border border-[#e6e3db] dark:border-[#332f20] bg-[#f5f3f0] dark:bg-[#252525] text-[#181611] dark:text-white focus:ring-2 focus:ring-primary outline-none disabled:opacity-70 disabled:cursor-not-allowed" />
-                                    </div>
+                                <div>
+                                    <h3 className="font-bold text-lg text-[#181611] dark:text-white">{profileForm.name}</h3>
+                                    <p className="text-sm text-[#8a8060]">{profileForm.email}</p>
                                 </div>
-                                <div className="flex justify-end pt-4 border-t border-[#e6e3db] dark:border-[#332f20]">
-                                    {!isEditingProfile ? (
-                                        <button type="button" onClick={() => { setIsEditingProfile(true); setProfileForm(userProfile); }} className="bg-[#f5f3f0] dark:bg-[#252525] hover:bg-[#e6e3db] text-[#181611] dark:text-white font-bold py-2.5 px-6 rounded-lg transition-colors flex items-center gap-2">
-                                            <span className="material-symbols-outlined">edit</span> {t('common.edit')}
-                                        </button>
-                                    ) : (
-                                        <div className="flex gap-2">
-                                            <button type="button" onClick={() => { setIsEditingProfile(false); setProfileForm(userProfile); }} className="text-red-500 font-bold py-2.5 px-6"> {t('common.cancel')} </button>
-                                            <button type="submit" className="bg-primary hover:bg-yellow-400 text-[#181611] font-bold py-2.5 px-6 rounded-lg"> {t('common.save')} </button>
-                                        </div>
-                                    )}
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-[#8a8060] mb-1">Name</label>
+                                    <input type="text" name="name" value={profileForm.name} onChange={e => setProfileForm({...profileForm, name: e.target.value})} className="w-full rounded-lg border-[#e6e3db] dark:border-[#332f20] bg-[#f5f3f0] dark:bg-[#252525] p-3 text-sm text-[#181611] dark:text-white focus:ring-primary focus:border-primary outline-none" disabled={!isEditingProfile} />
                                 </div>
-                             </form>
-                        </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-[#8a8060] mb-1">Email</label>
+                                    <input type="email" name="email" value={profileForm.email} onChange={e => setProfileForm({...profileForm, email: e.target.value})} className="w-full rounded-lg border-[#e6e3db] dark:border-[#332f20] bg-[#f5f3f0] dark:bg-[#252525] p-3 text-sm text-[#181611] dark:text-white focus:ring-primary focus:border-primary outline-none" disabled={!isEditingProfile} />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-[#8a8060] mb-1">Phone</label>
+                                    <input type="text" name="phone" value={profileForm.phone} onChange={e => setProfileForm({...profileForm, phone: e.target.value})} className="w-full rounded-lg border-[#e6e3db] dark:border-[#332f20] bg-[#f5f3f0] dark:bg-[#252525] p-3 text-sm text-[#181611] dark:text-white focus:ring-primary focus:border-primary outline-none" disabled={!isEditingProfile} />
+                                </div>
+                                <div className="md:col-span-2">
+                                    <label className="block text-sm font-medium text-[#8a8060] mb-1">Bio</label>
+                                    <textarea name="bio" value={profileForm.bio} onChange={e => setProfileForm({...profileForm, bio: e.target.value})} rows={3} className="w-full rounded-lg border-[#e6e3db] dark:border-[#332f20] bg-[#f5f3f0] dark:bg-[#252525] p-3 text-sm text-[#181611] dark:text-white focus:ring-primary focus:border-primary outline-none" disabled={!isEditingProfile}></textarea>
+                                </div>
+                            </div>
+                            <div className="flex justify-end gap-3">
+                                {isEditingProfile ? (
+                                    <>
+                                        <button type="button" onClick={() => setIsEditingProfile(false)} className="px-5 py-2 rounded-xl text-sm font-bold text-[#8a8060] hover:bg-gray-100 dark:hover:bg-[#2a261a] transition-colors">{t('common.cancel')}</button>
+                                        <button type="submit" className="px-5 py-2 rounded-xl bg-primary text-[#181611] text-sm font-bold hover:bg-yellow-400 shadow-md transition-colors">{t('common.save')}</button>
+                                    </>
+                                ) : (
+                                    <button type="button" onClick={() => setIsEditingProfile(true)} className="px-5 py-2 rounded-xl bg-primary text-[#181611] text-sm font-bold hover:bg-yellow-400 shadow-md transition-colors">{t('common.edit')}</button>
+                                )}
+                            </div>
+                        </form>
                     </div>
                 )}
 
                 {activeTab === 'addresses' && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-[fadeIn_0.3s_ease-out]">
-                        <button onClick={handleAddNewAddress} className="flex flex-col items-center justify-center min-h-[220px] border-2 border-dashed border-[#e6e3db] dark:border-[#332f20] rounded-xl hover:border-primary hover:bg-primary/5 transition-all group">
-                            <div className="size-16 rounded-full bg-[#f5f3f0] dark:bg-[#252525] group-hover:bg-primary/20 flex items-center justify-center mb-4 transition-colors"><span className="material-symbols-outlined text-[#8a8060] group-hover:text-primary text-3xl">add_location_alt</span></div>
-                            <h3 className="font-bold text-lg text-[#181611] dark:text-white">Add New Address</h3>
-                        </button>
-                        {addresses.map(addr => (
-                            <div key={addr.id} className="bg-white dark:bg-[#1a170d] rounded-xl border border-[#e6e3db] dark:border-[#332f20] p-6 flex flex-col relative shadow-sm">
-                                <div className="flex items-center gap-3 mb-4">
-                                    <div className={`size-12 rounded-full flex items-center justify-center bg-[#f5f3f0] text-[#8a8060]`}><span className="material-symbols-outlined">place</span></div>
-                                    <div><h3 className="font-bold text-lg text-[#181611] dark:text-white">{addr.name}</h3></div>
-                                </div>
-                                <div className="flex-1 text-sm text-[#5e584a] dark:text-gray-400 leading-relaxed mb-6"><p>{addr.street}</p><p>{addr.city}, {addr.state} {addr.zip}</p><p>{addr.country}</p></div>
-                                <div className="flex items-center justify-between pt-4 border-t border-[#e6e3db] dark:border-[#332f20]">
-                                    <button onClick={() => handleEditAddress(addr)} className="text-sm font-bold text-[#8a8060] hover:text-[#181611] dark:hover:text-white">{t('common.edit')}</button>
-                                    <button onClick={() => handleDeleteAddress(addr.id)} className="text-sm font-bold text-red-400 hover:text-red-500">{t('common.delete')}</button>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                )}
-
-                {/* Orders and Wishlist Tabs */}
-                {(activeTab === 'active' || activeTab === 'past' || activeTab === 'wishlist') && (
-                    <div className="bg-white dark:bg-[#1a170d] rounded-xl border border-[#e6e3db] dark:border-[#332f20] shadow-sm overflow-hidden min-h-[500px] animate-[fadeIn_0.3s_ease-out]">
-                    <div className="border-b border-[#e6e3db] dark:border-[#332f20] px-6">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                            <div className="flex gap-8 overflow-x-auto no-scrollbar">
-                                <button onClick={() => setActiveTab('active')} className={`flex flex-col items-center justify-center border-b-[3px] pb-[13px] pt-4 whitespace-nowrap transition-colors ${activeTab === 'active' ? 'border-b-primary text-[#181611] dark:text-white' : 'border-b-transparent text-[#8a8060] hover:text-[#181611] dark:hover:text-white'}`}><p className="text-sm font-bold leading-normal">{t('profile.tab.active')}</p></button>
-                                <button onClick={() => setActiveTab('past')} className={`flex flex-col items-center justify-center border-b-[3px] pb-[13px] pt-4 whitespace-nowrap transition-colors ${activeTab === 'past' ? 'border-b-primary text-[#181611] dark:text-white' : 'border-b-transparent text-[#8a8060] hover:text-[#181611] dark:hover:text-white'}`}><p className="text-sm font-bold leading-normal">{t('profile.tab.past')}</p></button>
-                                <button onClick={() => setActiveTab('wishlist')} className={`flex flex-col items-center justify-center border-b-[3px] pb-[13px] pt-4 whitespace-nowrap transition-colors ${activeTab === 'wishlist' ? 'border-b-primary text-[#181611] dark:text-white' : 'border-b-transparent text-[#8a8060] hover:text-[#181611] dark:hover:text-white'}`}><p className="text-sm font-bold leading-normal">{t('profile.tab.wishlist')} ({wishlist.length})</p></button>
-                            </div>
-                            
-                            {activeTab === 'wishlist' && (
-                                <div className="flex items-center gap-3 pb-3 sm:pb-0 ml-auto">
-                                     <div className="relative">
-                                        <select
-                                            value={sortOption}
-                                            onChange={(e) => setSortOption(e.target.value)}
-                                            className="appearance-none bg-white dark:bg-[#1a170d] border border-[#e6e3db] dark:border-[#332f20] text-[#181611] dark:text-white text-xs font-bold py-2 pl-3 pr-8 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer"
-                                        >
-                                            <option value="default">Default</option>
-                                            <option value="price-low">Price: Low to High</option>
-                                            <option value="price-high">Price: High to Low</option>
-                                            <option value="name">Name (A-Z)</option>
-                                        </select>
-                                        <span className="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none text-sm">expand_more</span>
-                                     </div>
-
-                                     <button 
-                                        onClick={handleShareWishlist}
-                                        className="bg-primary/10 hover:bg-primary/20 text-[#181611] dark:text-white text-xs font-bold px-3 py-2 rounded-lg transition-colors flex items-center gap-1.5 whitespace-nowrap"
-                                     >
-                                         <span className="material-symbols-outlined text-[16px]">share</span>
-                                         Share
-                                     </button>
-                                </div>
+                    <div className="bg-white dark:bg-[#1a170d] rounded-2xl shadow-sm border border-[#e6e3db] dark:border-[#332f20] p-6">
+                        <div className="flex justify-between items-center mb-6">
+                            <h2 className="text-2xl font-bold text-[#181611] dark:text-white">My Addresses</h2>
+                            <button onClick={handleAddNewAddress} className="px-5 py-2 rounded-xl bg-primary text-[#181611] text-sm font-bold hover:bg-yellow-400 shadow-md transition-colors flex items-center gap-2">
+                                <span className="material-symbols-outlined text-lg">add</span> Add New
+                            </button>
+                        </div>
+                        <div className="space-y-4">
+                            {addresses.length === 0 ? (
+                                <p className="text-[#8a8060] text-center py-4">No addresses saved. Add one to get started!</p>
+                            ) : (
+                                addresses.map(addr => (
+                                    <div key={addr.id} className="flex items-center justify-between p-4 bg-[#f5f3f0] dark:bg-[#2a261a] rounded-xl border border-[#e6e3db] dark:border-[#332f20]">
+                                        <div>
+                                            <h3 className="font-bold text-[#181611] dark:text-white">{addr.name} {addr.isDefault && <span className="text-xs font-medium text-primary ml-2 bg-primary/10 px-2 py-0.5 rounded-full">{t('common.default')}</span>}</h3>
+                                            <p className="text-sm text-[#8a8060]">{addr.street}, {addr.city}</p>
+                                            <p className="text-sm text-[#8a8060]">{addr.state} {addr.zip}, {addr.country}</p>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <button onClick={() => handleEditAddress(addr)} className="text-primary hover:text-yellow-600 transition-colors p-2">
+                                                <span className="material-symbols-outlined text-lg">edit</span>
+                                            </button>
+                                            <button onClick={() => handleDeleteAddress(addr.id)} className="text-red-500 hover:text-red-700 transition-colors p-2">
+                                                <span className="material-symbols-outlined text-lg">delete</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))
                             )}
                         </div>
                     </div>
+                )}
 
-                    <div className="overflow-x-auto w-full">
-                        {activeTab === 'wishlist' ? (
-                            <div className="p-6">
-                                {wishlistProducts.length > 0 ? (
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-                                        {wishlistProducts.map(product => (
-                                            <div key={product.id} className="group bg-white dark:bg-[#1a170e] border border-[#f5f3f0] dark:border-[#332f25] rounded-xl overflow-hidden hover:shadow-lg transition-all flex flex-col relative">
-                                                <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleWishlist(product.id); }} className="absolute top-2 right-2 z-20 bg-white/90 dark:bg-black/60 p-1.5 rounded-full text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors shadow-sm"><span className="material-symbols-outlined text-[18px]">close</span></button>
-                                                
-                                                {/* Quick View Trigger Overlay */}
-                                                <div className="absolute inset-x-0 top-0 aspect-square z-10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center bg-black/10 dark:bg-black/30 pointer-events-none">
-                                                    <button 
-                                                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setQuickViewProduct(product); }}
-                                                        className="pointer-events-auto bg-white dark:bg-[#252525] text-[#181611] dark:text-white px-4 py-2 rounded-full font-bold text-xs shadow-lg transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 flex items-center gap-1"
-                                                    >
-                                                        <span className="material-symbols-outlined text-[16px]">visibility</span>
-                                                        Quick View
-                                                    </button>
-                                                </div>
+                {activeTab === 'wishlist' && (
+                    <div className="bg-white dark:bg-[#1a170d] rounded-2xl shadow-sm border border-[#e6e3db] dark:border-[#332f20] p-6">
+                        <div className="flex justify-between items-center mb-6">
+                            <h2 className="text-2xl font-bold text-[#181611] dark:text-white">{t('profile.my_wishlist')}</h2>
+                            <button onClick={handleShareWishlist} className="px-5 py-2 rounded-xl bg-primary text-[#181611] text-sm font-bold hover:bg-yellow-400 shadow-md transition-colors flex items-center gap-2">
+                                <span className="material-symbols-outlined text-lg">share</span> Share
+                            </button>
+                        </div>
+                        <div className="flex items-center gap-3 mb-6">
+                            <span className="text-sm font-medium text-[#8a8060]">Sort by:</span>
+                            <div className="relative">
+                                <select 
+                                    value={sortOption}
+                                    onChange={(e) => setSortOption(e.target.value)}
+                                    className="appearance-none bg-[#f5f3f0] dark:bg-[#2a261a] border border-[#e6e3db] dark:border-[#332f20] rounded-lg py-2 pl-4 pr-10 text-sm font-medium text-[#181611] dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer"
+                                >
+                                    <option value="default">Default</option>
+                                    <option value="price-low">Price: Low to High</option>
+                                    <option value="price-high">Price: High to Low</option>
+                                    <option value="name">Name (A-Z)</option>
+                                </select>
+                                <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none text-lg">expand_more</span>
+                            </div>
+                        </div>
 
-                                                <Link to={`/product/${product.id}`} className="relative aspect-square bg-[#f8f8f8] dark:bg-[#252525] overflow-hidden block"><img alt={product.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" src={product.image} /></Link>
-                                                <div className="p-4 flex flex-col flex-1">
-                                                    <Link to={`/product/${product.id}`} className="block"><h3 className="font-bold text-[#181611] dark:text-white text-sm line-clamp-1 mb-1 group-hover:text-primary transition-colors">{product.name}</h3></Link>
-                                                    <div className="mt-auto flex items-center justify-between">
-                                                        <span className="text-lg font-bold text-[#181611] dark:text-white">{formatPrice(product.price)}</span>
-                                                        <button 
-                                                            onClick={(e) => { e.preventDefault(); addToCart(product); }} 
-                                                            className="bg-primary hover:bg-yellow-400 text-[#181611] p-2 rounded-lg transition-colors shadow-sm active:scale-95"
-                                                            title="Add to Cart"
-                                                        >
-                                                            <span className="material-symbols-outlined text-[20px] block">add_shopping_cart</span>
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <div className="text-center py-12 text-[#8a8060] dark:text-gray-400"><span className="material-symbols-outlined text-4xl mb-2 opacity-50">favorite</span><p>{t('profile.wishlist_empty')}</p></div>
-                                )}
+                        {wishlistProducts.length === 0 ? (
+                            <div className="text-center py-12">
+                                <span className="material-symbols-outlined text-6xl text-gray-200 dark:text-gray-700 mb-4">favorite</span>
+                                <h3 className="text-xl font-bold text-[#181611] dark:text-white mb-2">{t('profile.wishlist_empty')}</h3>
+                                <p className="text-[#8a8060] mb-6">Start adding your favorite toys!</p>
+                                <Link to="/shop" className="bg-primary hover:bg-yellow-400 text-[#181611] font-bold py-3 px-8 rounded-xl transition-colors inline-flex items-center gap-2">
+                                    {t('cart.start_shopping')}
+                                    <span className="material-symbols-outlined">arrow_forward</span>
+                                </Link>
                             </div>
                         ) : (
-                            <div className="divide-y divide-[#e6e3db] dark:divide-[#332f20]">
-                                {(activeTab === 'active' ? activeOrders : pastOrders).map(order => (
-                                    <div key={order.id} className="group">
-                                        <div 
-                                            className="flex flex-col md:flex-row md:items-center justify-between p-6 hover:bg-[#faf9f6] dark:hover:bg-[#252115] transition-colors cursor-pointer"
-                                            onClick={() => setExpandedOrder(expandedOrder === order.id ? null : order.id)}
-                                        >
-                                            <div className="flex gap-4">
-                                                <div className="flex -space-x-3">
-                                                    {order.thumbnails.map((src, i) => (
-                                                        <div key={i} className="bg-center bg-white bg-no-repeat aspect-square bg-cover rounded-full w-12 h-12 border-2 border-white dark:border-[#332f20] shadow-sm relative z-10" style={{ backgroundImage: `url("${src}")` }}></div>
-                                                    ))}
-                                                </div>
-                                                <div className="flex flex-col justify-center">
-                                                    <span className="text-[#181611] dark:text-white font-bold text-sm">Order #{order.id}</span>
-                                                    <span className="text-[#8a8060] text-xs">{order.items.length} Items • {order.date}</span>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center justify-between md:justify-end gap-6 mt-4 md:mt-0">
-                                                <span className="text-[#181611] dark:text-white font-bold">{formatPrice(order.total)}</span>
-                                                <div className="flex items-center gap-2">
-                                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${order.status === 'Processing' ? 'bg-primary/15 text-yellow-700 dark:text-primary' : 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'}`}>
-                                                        {order.status}
-                                                    </span>
-                                                    <span className={`material-symbols-outlined text-gray-400 transition-transform ${expandedOrder === order.id ? 'rotate-180' : ''}`}>expand_more</span>
-                                                </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {wishlistProducts.map(product => (
+                                    <div key={product.id} className="group bg-[#f5f3f0] dark:bg-[#2a261a] rounded-xl border border-[#e6e3db] dark:border-[#332f20] overflow-hidden hover:shadow-lg transition-all flex flex-col relative">
+                                        <Link to={`/product/${product.id}`} className="relative aspect-square bg-white dark:bg-[#332f20] overflow-hidden block">
+                                            <img src={product.image} alt={product.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                                            <button 
+                                                onClick={(e) => { e.preventDefault(); setQuickViewProduct(product); }}
+                                                className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white text-xs font-bold flex-col gap-1"
+                                            >
+                                                <span className="material-symbols-outlined text-3xl">visibility</span>
+                                                Quick View
+                                            </button>
+                                            <button 
+                                                onClick={(e) => { e.preventDefault(); toggleWishlist(product.id); }}
+                                                className="absolute top-3 right-3 z-10 p-2 rounded-full bg-red-50 text-red-500 transition-colors"
+                                            >
+                                                <span className="material-symbols-outlined text-[20px] fill-current" style={{ fontVariationSettings: "'FILL' 1" }}>favorite</span>
+                                            </button>
+                                        </Link>
+                                        <div className="p-4 flex flex-col flex-1">
+                                            <Link to={`/product/${product.id}`} className="font-bold text-lg text-[#181611] dark:text-white hover:text-primary transition-colors mb-1">{product.name}</Link>
+                                            <p className="text-sm text-[#8a8060] mb-3">{product.category}</p>
+                                            <div className="mt-auto flex items-center justify-between">
+                                                <span className="font-bold text-lg text-primary">{formatPrice(product.price)}</span>
+                                                <button 
+                                                    onClick={() => { addToCart(product); displayToast(`${product.name} added to cart!`); }}
+                                                    className="bg-primary hover:bg-yellow-400 text-[#181611] p-2.5 rounded-lg transition-colors active:scale-95 flex items-center gap-2 text-sm font-bold"
+                                                >
+                                                    <span className="material-symbols-outlined text-[20px]">add_shopping_cart</span>
+                                                    {t('product.add_to_cart')}
+                                                </button>
                                             </div>
                                         </div>
-                                        {/* Expandable Tracking Area */}
-                                        {expandedOrder === order.id && (
-                                            <div className="bg-[#fcfbf9] dark:bg-[#1f1b13] px-6 pb-6 pt-2 animate-[fadeIn_0.2s_ease-out]">
-                                                <OrderTracker status={order.status} />
-                                            </div>
-                                        )}
                                     </div>
                                 ))}
-                                {(activeTab === 'active' ? activeOrders : pastOrders).length === 0 && (
-                                    <div className="p-8 text-center text-[#8a8060] dark:text-gray-400"><span className="material-symbols-outlined text-4xl mb-2 opacity-50">inbox</span><p>No orders found.</p></div>
-                                )}
                             </div>
                         )}
                     </div>
+                )}
+
+                {activeTab === 'active' && (
+                    <div className="bg-white dark:bg-[#1a170d] rounded-2xl shadow-sm border border-[#e6e3db] dark:border-[#332f20] p-6">
+                        <h2 className="text-2xl font-bold mb-6 text-[#181611] dark:text-white">{t('profile.tab.active')}</h2>
+                        {activeOrders.length === 0 ? (
+                            <p className="text-[#8a8060] text-center py-4">No active orders at the moment. Time to shop!</p>
+                        ) : (
+                            <div className="space-y-6">
+                                {activeOrders.map(order => (
+                                    <div key={order.id} className="bg-[#f5f3f0] dark:bg-[#2a261a] rounded-xl p-4 border border-[#e6e3db] dark:border-[#332f20]">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <div>
+                                                <h3 className="font-bold text-lg text-[#181611] dark:text-white">Order {order.id}</h3>
+                                                <p className="text-sm text-[#8a8060]">{order.date} • {order.items.length} items</p>
+                                            </div>
+                                            <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                                                order.status === 'Processing' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
+                                                order.status === 'Shipped' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+                                                'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
+                                            }`}>
+                                                {order.status}
+                                            </span>
+                                        </div>
+                                        <div className="flex flex-wrap gap-2 mb-4">
+                                            {order.items.slice(0, 3).map((item, index) => (
+                                                <img key={index} src={item.image} alt={item.name} className="size-12 object-cover rounded-md border border-[#e6e3db] dark:border-[#332f20]" />
+                                            ))}
+                                            {order.items.length > 3 && (
+                                                <div className="size-12 flex items-center justify-center bg-[#e6e3db] dark:bg-[#332f20] text-sm font-bold text-[#8a8060] rounded-md">
+                                                    +{order.items.length - 3}
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="flex justify-between items-center border-t border-[#e6e3db] dark:border-[#332f20] pt-4">
+                                            <span className="font-bold text-lg text-[#181611] dark:text-white">{formatPrice(order.total)}</span>
+                                            <button onClick={() => setSelectedOrder(order)} className="px-4 py-2 rounded-xl bg-primary text-[#181611] text-sm font-bold hover:bg-yellow-400 transition-colors flex items-center gap-2">
+                                                <span className="material-symbols-outlined text-lg">visibility</span> View Details
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {activeTab === 'past' && (
+                    <div className="bg-white dark:bg-[#1a170d] rounded-2xl shadow-sm border border-[#e6e3db] dark:border-[#332f20] p-6">
+                        <h2 className="text-2xl font-bold mb-6 text-[#181611] dark:text-white">{t('profile.tab.past')}</h2>
+                        {pastOrders.length === 0 ? (
+                            <p className="text-[#8a8060] text-center py-4">No past orders yet. Keep shopping!</p>
+                        ) : (
+                            <div className="space-y-6">
+                                {pastOrders.map(order => (
+                                    <div key={order.id} className="bg-[#f5f3f0] dark:bg-[#2a261a] rounded-xl p-4 border border-[#e6e3db] dark:border-[#332f20]">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <div>
+                                                <h3 className="font-bold text-lg text-[#181611] dark:text-white">Order {order.id}</h3>
+                                                <p className="text-sm text-[#8a8060]">{order.date} • {order.items.length} items</p>
+                                            </div>
+                                            <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                                                order.status === 'Delivered' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+                                                'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
+                                            }`}>
+                                                {order.status}
+                                            </span>
+                                        </div>
+                                        <div className="flex flex-wrap gap-2 mb-4">
+                                            {order.items.slice(0, 3).map((item, index) => (
+                                                <img key={index} src={item.image} alt={item.name} className="size-12 object-cover rounded-md border border-[#e6e3db] dark:border-[#332f20]" />
+                                            ))}
+                                            {order.items.length > 3 && (
+                                                <div className="size-12 flex items-center justify-center bg-[#e6e3db] dark:bg-[#332f20] text-sm font-bold text-[#8a8060] rounded-md">
+                                                    +{order.items.length - 3}
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="flex justify-between items-center border-t border-[#e6e3db] dark:border-[#332f20] pt-4">
+                                            <span className="font-bold text-lg text-[#181611] dark:text-white">{formatPrice(order.total)}</span>
+                                            <button onClick={() => setSelectedOrder(order)} className="px-4 py-2 rounded-xl bg-primary text-[#181611] text-sm font-bold hover:bg-yellow-400 transition-colors flex items-center gap-2">
+                                                <span className="material-symbols-outlined text-lg">visibility</span> View Details
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 )}
             </div>
@@ -693,10 +835,13 @@ const Profile: React.FC = () => {
 
       {/* Quick View Modal */}
       <QuickViewModal />
+      {/* Address Management Modal */}
       <AddressModal />
+      {/* Order Details Modal */}
+      {selectedOrder && <OrderDetailsModal order={selectedOrder} onClose={() => setSelectedOrder(null)} />}
 
       {/* Toast Notification */}
-      {showShareToast && (
+      {showToast && (
           <div className="fixed bottom-10 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg z-50 animate-[fadeIn_0.3s_ease-out]">
               {toastMessage}
           </div>
