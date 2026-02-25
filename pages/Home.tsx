@@ -31,16 +31,16 @@ const VideoModal: React.FC<{ isOpen: boolean; onClose: () => void; videoUrl: str
   }, []);
 
   return (
-    <div 
+    <div
       className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-[fadeIn_0.2s_ease-out]"
       onClick={handleClose}
     >
-      <div 
+      <div
         className="relative w-full max-w-4xl aspect-video bg-white dark:bg-gray-800 rounded-lg shadow-2xl overflow-hidden border border-gray-700"
         onClick={e => e.stopPropagation()} // Prevent closing when clicking on the video container
       >
-        <button 
-          onClick={handleClose} 
+        <button
+          onClick={handleClose}
           className="absolute -top-3 -right-3 size-9 flex items-center justify-center rounded-full bg-red-500 text-white z-10 shadow-lg hover:bg-red-600 transition-colors"
         >
           <span className="material-symbols-outlined text-lg">close</span>
@@ -75,7 +75,7 @@ const Home: React.FC = () => {
         {/* Background Elements */}
         <div className="absolute top-10 right-[5%] w-32 h-32 bg-primary/20 rounded-full blur-2xl -z-10 animate-[float_6s_ease-in-out_infinite]"></div>
         <div className="absolute bottom-20 left-[10%] w-48 h-48 bg-blue-300/20 rounded-full blur-3xl -z-10 animate-[float_5s_ease-in-out_infinite]"></div>
-        
+
         <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col-reverse lg:flex-row items-center gap-10 lg:gap-16">
             <div className="flex-1 text-center lg:text-left space-y-6">
@@ -84,7 +84,7 @@ const Home: React.FC = () => {
                 {t('home.hero.new_arrival')}
               </div>
               <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black text-[#181611] dark:text-white leading-[1.1] tracking-tight">
-                {t('home.hero.title_1')} <br/>
+                {t('home.hero.title_1')} <br />
                 <span className="text-primary">{t('home.hero.title_2')}</span>
               </h1>
               <p className="text-lg text-gray-600 dark:text-gray-300 max-w-xl mx-auto lg:mx-0 leading-relaxed">
@@ -95,16 +95,16 @@ const Home: React.FC = () => {
                   {t('home.explore')}
                   <span className="material-symbols-outlined text-sm">arrow_forward</span>
                 </Link>
-                <button 
-                    onClick={() => setIsVideoModalOpen(true)}
-                    className="h-12 px-8 rounded-lg bg-white dark:bg-[#2a261a] border border-gray-200 dark:border-gray-700 hover:border-primary text-[#181611] dark:text-white font-semibold text-base transition-colors flex items-center gap-2"
+                <button
+                  onClick={() => setIsVideoModalOpen(true)}
+                  className="h-12 px-8 rounded-lg bg-white dark:bg-[#2a261a] border border-gray-200 dark:border-gray-700 hover:border-primary text-[#181611] dark:text-white font-semibold text-base transition-colors flex items-center gap-2"
                 >
                   <span className="material-symbols-outlined text-red-500 fill-current" style={{ fontVariationSettings: "'FILL' 1" }}>play_circle</span>
                   {t('home.watch_video')}
                 </button>
               </div>
             </div>
-            
+
             <div className="flex-1 w-full max-w-[600px] lg:max-w-none relative">
               <div className="aspect-[4/3] rounded-2xl overflow-hidden shadow-2xl bg-gray-100 dark:bg-gray-800 relative group">
                 <div className="w-full h-full bg-center bg-cover transition-transform duration-700 group-hover:scale-105" style={{ backgroundImage: 'url("https://lh3.googleusercontent.com/aida-public/AB6AXuDFvzJSahO8Uu4G_D6cu88g_plzhfzfd273TlaytgcvC3bBNOjvTgf71-GBloQLMV_KcKCsirUf6BpiejGkOCb_1NhPfdvBMYznQ0bocw_oksiu7ink1_Pj3xRRnd2tEUwXuRKSS_fVYwZK8UYfAIxGPm-WcvxQJI2uhCZPPXK93eRh89V3vNLsFhQEt1QeX1Hsx-WopRTPjfggzIBa2fOosRNmTgszVJxRdiRoQtjRw_KsoDuLX1sb01yJAgqSykleal0w4fW1x27O")' }}></div>
@@ -169,9 +169,9 @@ const Home: React.FC = () => {
                       {product.originalPrice && <span className="text-xs text-gray-400 line-through">{formatPrice(product.originalPrice)}</span>}
                       <span className="font-bold text-lg">{formatPrice(product.price)}</span>
                     </div>
-                    <button 
-                        onClick={() => addToCart(product)}
-                        className="bg-primary/10 hover:bg-primary text-primary hover:text-black p-2 rounded-lg transition-colors active:scale-95"
+                    <button
+                      onClick={() => addToCart(product)}
+                      className="bg-primary/10 hover:bg-primary text-primary hover:text-black p-2 rounded-lg transition-colors active:scale-95"
                     >
                       <span className="material-symbols-outlined">add_shopping_cart</span>
                     </button>
@@ -210,8 +210,8 @@ const Home: React.FC = () => {
         </div>
       </section>
 
-       {/* Floating AI Button */}
-       <div className="fixed bottom-6 right-6 z-50">
+      {/* Floating AI Button */}
+      <div className="fixed bottom-6 right-6 z-50">
         <Link to="/ai-assistant" className="group relative flex size-14 items-center justify-center rounded-full bg-primary text-[#181611] shadow-lg hover:bg-yellow-400 transition-all hover:scale-110">
           <span className="material-symbols-outlined text-[28px]">smart_toy</span>
           <span className="absolute right-full mr-3 bg-white text-[#181611] text-xs font-bold px-2 py-1 rounded shadow-sm opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
@@ -219,12 +219,12 @@ const Home: React.FC = () => {
           </span>
         </Link>
       </div>
-      
+
       {/* Video Modal */}
-      <VideoModal 
-        isOpen={isVideoModalOpen} 
-        onClose={() => setIsVideoModalOpen(false)} 
-        videoUrl={VIDEO_URL} 
+      <VideoModal
+        isOpen={isVideoModalOpen}
+        onClose={() => setIsVideoModalOpen(false)}
+        videoUrl={VIDEO_URL}
       />
     </div>
   );

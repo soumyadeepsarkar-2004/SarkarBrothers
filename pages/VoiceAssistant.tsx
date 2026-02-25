@@ -251,8 +251,8 @@ const VoiceAssistant: React.FC = () => {
                             className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}
                         >
                             <div className={`size-10 rounded-full flex items-center justify-center shrink-0 ${msg.role === 'assistant'
-                                    ? 'bg-gradient-to-br from-purple-500 to-blue-500 text-white'
-                                    : 'bg-gray-700 text-white'
+                                ? 'bg-gradient-to-br from-purple-500 to-blue-500 text-white'
+                                : 'bg-gray-700 text-white'
                                 }`}>
                                 <span className="material-symbols-outlined text-lg">
                                     {msg.role === 'assistant' ? 'smart_toy' : 'person'}
@@ -261,8 +261,8 @@ const VoiceAssistant: React.FC = () => {
 
                             <div className="flex flex-col gap-1 max-w-[75%]">
                                 <div className={`p-4 rounded-2xl shadow-sm ${msg.role === 'assistant'
-                                        ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-tl-none'
-                                        : 'bg-gradient-to-br from-purple-500 to-blue-500 text-white rounded-tr-none'
+                                    ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-tl-none'
+                                    : 'bg-gradient-to-br from-purple-500 to-blue-500 text-white rounded-tr-none'
                                     }`}>
                                     <p className="text-sm leading-relaxed">{msg.text}</p>
                                 </div>
@@ -320,8 +320,8 @@ const VoiceAssistant: React.FC = () => {
                             onClick={isRecording ? stopRecording : startRecording}
                             disabled={isLoading}
                             className={`relative size-20 rounded-full flex items-center justify-center transition-all transform hover:scale-105 active:scale-95 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed ${isRecording
-                                    ? 'bg-red-500 hover:bg-red-600 animate-pulse'
-                                    : 'bg-gradient-to-br from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600'
+                                ? 'bg-red-500 hover:bg-red-600 animate-pulse'
+                                : 'bg-gradient-to-br from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600'
                                 }`}
                         >
                             <span className="material-symbols-outlined text-4xl text-white">
