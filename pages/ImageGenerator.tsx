@@ -14,6 +14,7 @@ const ImageGenerator: React.FC = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
+    const [loadingStage, setLoadingStage] = useState<string>('');
 
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -52,6 +53,7 @@ const ImageGenerator: React.FC = () => {
         setError(null);
         setSuccessMessage(null);
         setGeneratedImageUrl(null);
+        setLoadingStage('Connecting to AI service...');
 
         try {
             const imageUrl = await generateImageWithPrompt(prompt, imageSize);
@@ -59,9 +61,10 @@ const ImageGenerator: React.FC = () => {
             setSuccessMessage('Image generated successfully!');
         } catch (err: any) {
             console.error('Generation error:', err);
-            setError(err.message || 'Failed to generate image. Please check your API key and try again.');
+            setError(err.message || 'Failed to generate image. Please try again.');
         } finally {
             setIsLoading(false);
+            setLoadingStage('');
         }
     };
 
@@ -80,6 +83,7 @@ const ImageGenerator: React.FC = () => {
         setError(null);
         setSuccessMessage(null);
         setGeneratedImageUrl(null);
+        setLoadingStage('Processing your image...');
 
         try {
             const imageUrl = await editImageWithPrompt(uploadedImage, prompt);
@@ -87,9 +91,10 @@ const ImageGenerator: React.FC = () => {
             setSuccessMessage('Image edited successfully!');
         } catch (err: any) {
             console.error('Editing error:', err);
-            setError(err.message || 'Failed to edit image. Please check your API key and try again.');
+            setError(err.message || 'Failed to edit image. Please try again.');
         } finally {
             setIsLoading(false);
+            setLoadingStage('');
         }
     };
 
@@ -348,7 +353,10 @@ const ImageGenerator: React.FC = () => {
                                         <p className="text-gray-600 dark:text-gray-400 font-medium">
                                             {activeTab === 'generate' ? 'Generating image...' : 'Editing image...'}
                                         </p>
-                                        <p className="text-sm text-gray-500 dark:text-gray-500 mt-2">This may take a moment</p>
+                                        <p className="text-sm text-gray-500 dark:text-gray-500 mt-2">
+                                            {loadingStage || 'Trying multiple AI providers for best result...'}
+                                        </p>
+                                        <p className="text-xs text-gray-400 dark:text-gray-600 mt-1">This may take 10-30 seconds</p>
                                     </div>
                                 ) : (
                                     <div className="text-center p-8">
