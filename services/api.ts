@@ -111,7 +111,9 @@ class MockBackend {
       mockUsers[updatedProfile.email] = { ...existing, ...updatedProfile };
       return mockUsers[updatedProfile.email];
     }
-    throw new Error("Mock profile not found for update");
+    // For Google Auth or new users, create a mock entry
+    mockUsers[updatedProfile.email] = updatedProfile;
+    return updatedProfile;
   }
 
   static async getOrders(userEmail: string): Promise<Order[]> {
@@ -123,13 +125,15 @@ class MockBackend {
   static async createOrder(items: CartItem[], total: number, customerEmail?: string): Promise<Order> {
     await simulateDelay(1000);
     const userProfile = customerEmail ? mockUsers[customerEmail] : null;
-    if (!userProfile) throw new Error("Customer profile not found for order creation");
+    // Allow order creation even for users not in the mock database (e.g., Google Auth users)
+    const customerName = userProfile?.name || customerEmail?.split('@')[0] || 'Customer';
+    const customerEmailFinal = userProfile?.email || customerEmail || 'unknown@example.com';
 
     const newOrder: Order = {
       id: `ORD-${Math.floor(Math.random() * 9000) + 1000}`,
       date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-      customerName: userProfile.name,
-      customerEmail: userProfile.email,
+      customerName: customerName,
+      customerEmail: customerEmailFinal,
       items: items.map(item => ({
         productId: item.id,
         name: item.name,

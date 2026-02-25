@@ -78,6 +78,8 @@ export interface AuthContextType {
   user: AuthUser | null;
   role: UserRole | null;
   login: (email: string, pass: string) => Promise<boolean>;
+  loginWithGoogle: () => Promise<boolean>;
   logout: () => void;
   loading: boolean;
+  firebaseEnabled: boolean;
 }

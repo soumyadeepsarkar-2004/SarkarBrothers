@@ -14,8 +14,19 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
+const CART_STORAGE_KEY = 'toyWonderCart';
+
+const loadCartFromStorage = (): CartItem[] => {
+  try {
+    const saved = localStorage.getItem(CART_STORAGE_KEY);
+    return saved ? JSON.parse(saved) : [];
+  } catch {
+    return [];
+  }
+};
+
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [items, setItems] = useState<CartItem[]>([]);
+  const [items, setItems] = useState<CartItem[]>(loadCartFromStorage);
 
   const addToCart = (product: Product, quantity: number = 1) => {
     setItems(prev => {
@@ -32,7 +43,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const updateQuantity = (id: string, delta: number) => {
-    setItems(prev => 
+    setItems(prev =>
       prev.map(item => {
         if (item.id === id) {
           return { ...item, quantity: Math.max(0, item.quantity + delta) };
@@ -41,6 +52,11 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }).filter(item => item.quantity > 0)
     );
   };
+
+  // Persist cart to localStorage
+  useEffect(() => {
+    localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
+  }, [items]);
 
   const clearCart = () => {
     setItems([]);

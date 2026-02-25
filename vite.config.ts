@@ -9,6 +9,14 @@ export default defineConfig(({ mode }) => {
   const API_BASE_URL = env.API_BASE_URL || process.env.API_BASE_URL || '';
   const USE_MOCK = env.USE_MOCK_BACKEND || process.env.USE_MOCK_BACKEND || 'true';
 
+  // Firebase config
+  const FIREBASE_API_KEY = env.FIREBASE_API_KEY || process.env.FIREBASE_API_KEY || '';
+  const FIREBASE_AUTH_DOMAIN = env.FIREBASE_AUTH_DOMAIN || process.env.FIREBASE_AUTH_DOMAIN || '';
+  const FIREBASE_PROJECT_ID = env.FIREBASE_PROJECT_ID || process.env.FIREBASE_PROJECT_ID || '';
+  const FIREBASE_STORAGE_BUCKET = env.FIREBASE_STORAGE_BUCKET || process.env.FIREBASE_STORAGE_BUCKET || '';
+  const FIREBASE_MESSAGING_SENDER_ID = env.FIREBASE_MESSAGING_SENDER_ID || process.env.FIREBASE_MESSAGING_SENDER_ID || '';
+  const FIREBASE_APP_ID = env.FIREBASE_APP_ID || process.env.FIREBASE_APP_ID || '';
+
   return {
     server: {
       port: 3000,
@@ -25,6 +33,12 @@ export default defineConfig(({ mode }) => {
       'process.env.GEMINI_API_KEY': JSON.stringify(GEMINI_API_KEY),
       'process.env.API_BASE_URL': JSON.stringify(API_BASE_URL),
       'process.env.USE_MOCK_BACKEND': JSON.stringify(USE_MOCK),
+      'process.env.FIREBASE_API_KEY': JSON.stringify(FIREBASE_API_KEY),
+      'process.env.FIREBASE_AUTH_DOMAIN': JSON.stringify(FIREBASE_AUTH_DOMAIN),
+      'process.env.FIREBASE_PROJECT_ID': JSON.stringify(FIREBASE_PROJECT_ID),
+      'process.env.FIREBASE_STORAGE_BUCKET': JSON.stringify(FIREBASE_STORAGE_BUCKET),
+      'process.env.FIREBASE_MESSAGING_SENDER_ID': JSON.stringify(FIREBASE_MESSAGING_SENDER_ID),
+      'process.env.FIREBASE_APP_ID': JSON.stringify(FIREBASE_APP_ID),
     },
     resolve: {
       alias: {
@@ -34,10 +48,12 @@ export default defineConfig(({ mode }) => {
     build: {
       outDir: 'dist',
       sourcemap: false,
+      chunkSizeWarningLimit: 800,
       rollupOptions: {
         output: {
           manualChunks: {
             'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+            'firebase-vendor': ['firebase/app', 'firebase/auth'],
           }
         }
       }
