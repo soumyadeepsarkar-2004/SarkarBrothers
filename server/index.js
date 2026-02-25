@@ -368,7 +368,7 @@ app.get('/api/admin/stats', async (req, res) => {
 app.get('/api/admin/orders', async (req, res) => {
   try {
     if (dbConnected) {
-      try { const orders = await Order.find().sort({ createdAt: -1 }).lean(); if (orders.length > 0) return res.json(orders); } catch (dbErr) {}
+      try { const orders = await Order.find().sort({ createdAt: -1 }).lean(); if (orders.length > 0) return res.json(orders); } catch (dbErr) { }
     }
     res.json(mockOrders);
   } catch (err) { res.status(500).json({ error: 'Failed to fetch orders' }); }
@@ -381,7 +381,7 @@ app.patch('/api/admin/orders/:id', async (req, res) => {
     if (!validStatuses.includes(status)) return res.status(400).json({ error: 'Invalid status' });
 
     if (dbConnected) {
-      try { const order = await Order.findByIdAndUpdate(req.params.id, { status }, { new: true }).lean(); if (order) return res.json(order); } catch (dbErr) {}
+      try { const order = await Order.findByIdAndUpdate(req.params.id, { status }, { new: true }).lean(); if (order) return res.json(order); } catch (dbErr) { }
     }
 
     const mockOrder = mockOrders.find(o => o.id === req.params.id);
@@ -396,7 +396,7 @@ app.post('/api/admin/products', async (req, res) => {
     if (!name || !category || !price) return res.status(400).json({ error: 'Name, category, and price are required' });
 
     if (dbConnected) {
-      try { const product = await Product.create({ name, category, price, description, image, stock, badge }); return res.status(201).json(product); } catch (dbErr) {}
+      try { const product = await Product.create({ name, category, price, description, image, stock, badge }); return res.status(201).json(product); } catch (dbErr) { }
     }
 
     const newProduct = { id: String(seedProducts.length + 1), name, category, price, description, image, stock: stock || 0, badge, rating: 0, reviews: 0 };
@@ -408,7 +408,7 @@ app.post('/api/admin/products', async (req, res) => {
 app.put('/api/admin/products/:id', async (req, res) => {
   try {
     if (dbConnected) {
-      try { const product = await Product.findByIdAndUpdate(req.params.id, req.body, { new: true }).lean(); if (product) return res.json(product); } catch (dbErr) {}
+      try { const product = await Product.findByIdAndUpdate(req.params.id, req.body, { new: true }).lean(); if (product) return res.json(product); } catch (dbErr) { }
     }
     const idx = seedProducts.findIndex(p => p.id === req.params.id);
     if (idx !== -1) { seedProducts[idx] = { ...seedProducts[idx], ...req.body }; return res.json(seedProducts[idx]); }
@@ -419,7 +419,7 @@ app.put('/api/admin/products/:id', async (req, res) => {
 app.delete('/api/admin/products/:id', async (req, res) => {
   try {
     if (dbConnected) {
-      try { const product = await Product.findByIdAndDelete(req.params.id); if (product) return res.json({ message: 'Product deleted' }); } catch (dbErr) {}
+      try { const product = await Product.findByIdAndDelete(req.params.id); if (product) return res.json({ message: 'Product deleted' }); } catch (dbErr) { }
     }
     const idx = seedProducts.findIndex(p => p.id === req.params.id);
     if (idx !== -1) { seedProducts.splice(idx, 1); return res.json({ message: 'Product deleted' }); }
