@@ -1,9 +1,9 @@
 import { Product, Order, Address, CartItem, UserProfile, AuthUser, UserRole } from '../types';
 import { products as mockProducts, orders as mockOrders, mockUsers } from '../data';
 
-// Configuration
-const USE_MOCK_BACKEND = true; // Toggle this to false to use the real Node.js server
-const API_BASE_URL = 'http://localhost:5000/api';
+// Configuration - controlled by env vars set via Vite define
+const USE_MOCK_BACKEND = (process.env.USE_MOCK_BACKEND || 'true') === 'true';
+const API_BASE_URL = process.env.API_BASE_URL || '/api';
 
 // --- Types ---
 export interface ApiFilters {
@@ -171,9 +171,17 @@ export const api = {
       const query = new URLSearchParams();
       if (filters.search) query.append('search', filters.search);
       filters.categories?.forEach(c => query.append('category', c));
-      // ... map other filters to query params
+      if (filters.priceRange?.length) {
+        const min = Math.min(...filters.priceRange.map(r => r.min));
+        const max = Math.max(...filters.priceRange.map(r => r.max));
+        query.append('minPrice', String(min));
+        query.append('maxPrice', String(max));
+      }
+      if (filters.sort) query.append('sort', filters.sort);
       const res = await fetch(`${API_BASE_URL}/products?${query.toString()}`);
-      return res.json();
+      const data = await res.json();
+      // Server returns { products, pagination } or an array
+      return Array.isArray(data) ? data : (data.products || []);
     },
 
     get: async (id: string): Promise<Product | undefined> => {
@@ -229,9 +237,16 @@ export const api = {
     // New login function
     login: async (email: string, password: string) => {
       if (USE_MOCK_BACKEND) return MockBackend.login(email, password);
-      // In a real app, this would be a POST request to your auth endpoint
-      // const res = await fetch(`${API_BASE_URL}/auth/login`, { ... });
-      throw new Error("Real login not implemented in this demo.");
+      const res = await fetch(`${API_BASE_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: 'Login failed' }));
+        throw new Error(err.error || 'Login failed');
+      }
+      return res.json();
     },
 
     getProfile: async (userEmail: string) => { // Now requires email for mock lookup
@@ -258,8 +273,16 @@ export const api = {
 
     createOrder: async (items: CartItem[], total: number, customerEmail?: string) => {
       if (USE_MOCK_BACKEND) return MockBackend.createOrder(items, total, customerEmail);
-      // Real API call would go here, often without needing email directly if session is managed
-      return {} as Order;
+      const res = await fetch(`${API_BASE_URL}/user/orders`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items, total, email: customerEmail }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: 'Order creation failed' }));
+        throw new Error(err.error || 'Order creation failed');
+      }
+      return res.json();
     }
   },
 
@@ -273,6 +296,26 @@ export const api = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message, language })
       });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: 'AI chat failed' }));
+        throw new Error(err.error || 'AI chat failed');
+      }
+      return res.json();
+    },
+
+    voice: async (message: string, language: 'en' | 'bn' = 'en') => {
+      if (USE_MOCK_BACKEND) {
+        throw new Error("Mock backend delegates to client-side AI");
+      }
+      const res = await fetch(`${API_BASE_URL}/ai/voice`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message, language })
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: 'Voice AI failed' }));
+        throw new Error(err.error || 'Voice AI failed');
+      }
       return res.json();
     }
   }
