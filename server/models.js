@@ -1,5 +1,5 @@
 
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 // --- User Schema ---
 const addressSchema = new mongoose.Schema({
@@ -59,10 +59,10 @@ const orderSchema = new mongoose.Schema({
   user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   items: [orderItemSchema],
   total: Number,
-  status: { 
-    type: String, 
-    enum: ['Processing', 'Shipped', 'Delivered', 'Cancelled'], 
-    default: 'Processing' 
+  status: {
+    type: String,
+    enum: ['Processing', 'Shipped', 'Delivered', 'Cancelled'],
+    default: 'Processing'
   },
   shippingAddress: addressSchema,
   paymentMethod: String,
@@ -70,8 +70,6 @@ const orderSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 });
 
-module.exports = {
-  User: mongoose.model('User', userSchema),
-  Product: mongoose.model('Product', productSchema),
-  Order: mongoose.model('Order', orderSchema)
-};
+export const User = mongoose.model('User', userSchema);
+export const Product = mongoose.model('Product', productSchema);
+export const Order = mongoose.model('Order', orderSchema);

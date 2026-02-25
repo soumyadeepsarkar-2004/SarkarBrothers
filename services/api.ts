@@ -15,23 +15,23 @@ export interface ApiFilters {
 
 // --- Local Storage History Helper ---
 export const saveToHistory = (productName: string) => {
-    try {
-        const history = JSON.parse(localStorage.getItem('viewedItems') || '[]');
-        if (!history.includes(productName)) {
-            const newHistory = [productName, ...history].slice(0, 10); // Keep last 10
-            localStorage.setItem('viewedItems', JSON.stringify(newHistory));
-        }
-    } catch (e) {
-        console.error("LS Error", e);
+  try {
+    const history = JSON.parse(localStorage.getItem('viewedItems') || '[]');
+    if (!history.includes(productName)) {
+      const newHistory = [productName, ...history].slice(0, 10); // Keep last 10
+      localStorage.setItem('viewedItems', JSON.stringify(newHistory));
     }
+  } catch (e) {
+    console.error("LS Error", e);
+  }
 };
 
 export const getHistory = (): string[] => {
-    try {
-        return JSON.parse(localStorage.getItem('viewedItems') || '[]');
-    } catch (e) {
-        return [];
-    }
+  try {
+    return JSON.parse(localStorage.getItem('viewedItems') || '[]');
+  } catch (e) {
+    return [];
+  }
 };
 
 // --- Mock Backend Logic (Simulates Database) ---
@@ -44,8 +44,8 @@ class MockBackend {
 
     if (filters.search) {
       const q = filters.search.toLowerCase();
-      results = results.filter(p => 
-        p.name.toLowerCase().includes(q) || 
+      results = results.filter(p =>
+        p.name.toLowerCase().includes(q) ||
         p.category.toLowerCase().includes(q)
       );
     }
@@ -55,7 +55,7 @@ class MockBackend {
     }
 
     if (filters.priceRange?.length) {
-      results = results.filter(p => 
+      results = results.filter(p =>
         filters.priceRange!.some(range => p.price >= range.min && p.price < range.max)
       );
     }
@@ -108,8 +108,8 @@ class MockBackend {
     await simulateDelay(800);
     const existing = mockUsers[updatedProfile.email];
     if (existing) {
-        mockUsers[updatedProfile.email] = { ...existing, ...updatedProfile };
-        return mockUsers[updatedProfile.email];
+      mockUsers[updatedProfile.email] = { ...existing, ...updatedProfile };
+      return mockUsers[updatedProfile.email];
     }
     throw new Error("Mock profile not found for update");
   }
@@ -117,48 +117,48 @@ class MockBackend {
   static async getOrders(userEmail: string): Promise<Order[]> {
     await simulateDelay(600);
     // Filter mock orders by customer email
-    return [...mockOrders].filter(order => order.customerEmail === userEmail).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    return [...mockOrders].filter(order => order.customerEmail === userEmail).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }
-  
+
   static async createOrder(items: CartItem[], total: number, customerEmail?: string): Promise<Order> {
     await simulateDelay(1000);
     const userProfile = customerEmail ? mockUsers[customerEmail] : null;
     if (!userProfile) throw new Error("Customer profile not found for order creation");
 
     const newOrder: Order = {
-        id: `ORD-${Math.floor(Math.random() * 9000) + 1000}`,
-        date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-        customerName: userProfile.name,
-        customerEmail: userProfile.email,
-        items: items.map(item => ({
-            productId: item.id,
-            name: item.name,
-            image: item.image,
-            quantity: item.quantity,
-            price: item.price,
-        })),
-        total: total,
-        status: 'Processing',
-        shippingAddress: mockOrders[0].shippingAddress, // Use an existing address for mock data
-        paymentMethod: 'UPI / QR Scan',
+      id: `ORD-${Math.floor(Math.random() * 9000) + 1000}`,
+      date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      customerName: userProfile.name,
+      customerEmail: userProfile.email,
+      items: items.map(item => ({
+        productId: item.id,
+        name: item.name,
+        image: item.image,
+        quantity: item.quantity,
+        price: item.price,
+      })),
+      total: total,
+      status: 'Processing',
+      shippingAddress: mockOrders[0].shippingAddress, // Use an existing address for mock data
+      paymentMethod: 'UPI / QR Scan',
     };
     mockOrders.unshift(newOrder); // Add to the beginning of the list
     return newOrder;
   }
 
   static async getRecommendations(history: string[]): Promise<Product[]> {
-      await simulateDelay(800);
-      if (history.length === 0) return mockProducts.slice(0, 3);
-      
-      // Simple mock logic: Find products in similar categories to history names
-      // Real backend uses AI, here we just do a dumb keyword match
-      const keywords = history.join(' ').toLowerCase();
-      const recs = mockProducts.filter(p => 
-          keywords.includes(p.category.toLowerCase()) || 
-          keywords.includes(p.name.split(' ')[0].toLowerCase())
-      );
-      
-      return recs.length > 0 ? recs.slice(0, 4) : mockProducts.slice(0, 4);
+    await simulateDelay(800);
+    if (history.length === 0) return mockProducts.slice(0, 3);
+
+    // Simple mock logic: Find products in similar categories to history names
+    // Real backend uses AI, here we just do a dumb keyword match
+    const keywords = history.join(' ').toLowerCase();
+    const recs = mockProducts.filter(p =>
+      keywords.includes(p.category?.toLowerCase() || '') ||
+      (p.name && keywords.includes(p.name.split(' ')[0]?.toLowerCase() || ''))
+    );
+
+    return recs.length > 0 ? recs.slice(0, 4) : mockProducts.slice(0, 4);
   }
 }
 
@@ -167,7 +167,7 @@ export const api = {
   products: {
     list: async (filters: ApiFilters): Promise<Product[]> => {
       if (USE_MOCK_BACKEND) return MockBackend.getProducts(filters);
-      
+
       const query = new URLSearchParams();
       if (filters.search) query.append('search', filters.search);
       filters.categories?.forEach(c => query.append('category', c));
@@ -175,7 +175,7 @@ export const api = {
       const res = await fetch(`${API_BASE_URL}/products?${query.toString()}`);
       return res.json();
     },
-    
+
     get: async (id: string): Promise<Product | undefined> => {
       if (USE_MOCK_BACKEND) return MockBackend.getProductById(id);
       const res = await fetch(`${API_BASE_URL}/products/${id}`);
@@ -183,23 +183,55 @@ export const api = {
     },
 
     getRecommendations: async (history: string[]): Promise<Product[]> => {
-        if (USE_MOCK_BACKEND) return MockBackend.getRecommendations(history);
-        const res = await fetch(`${API_BASE_URL}/ai/recommend`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ history })
+      if (USE_MOCK_BACKEND) return MockBackend.getRecommendations(history);
+      const res = await fetch(`${API_BASE_URL}/ai/recommend`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ history })
+      });
+      return res.json();
+    },
+
+    getSearchRecommendations: async (searchQuery: string): Promise<Product[]> => {
+      if (USE_MOCK_BACKEND) {
+        // Enhanced mock logic for search recommendations
+        await simulateDelay(800);
+        const query = searchQuery.toLowerCase();
+
+        // Find related products by category similarity
+        const relatedProducts = mockProducts.filter(p => {
+          const categoryMatch = p.category?.toLowerCase().includes(query);
+          const nameMatch = p.name?.toLowerCase().includes(query);
+          // Return products in similar categories but not exact matches
+          return categoryMatch && !nameMatch;
         });
-        return res.json();
+
+        // If no category matches, return products from popular categories
+        if (relatedProducts.length === 0) {
+          return mockProducts.filter(p =>
+            ['Educational', 'Plushies', 'Robots'].includes(p.category || '')
+          ).slice(0, 6);
+        }
+
+        return relatedProducts.slice(0, 6);
+      }
+
+      const res = await fetch(`${API_BASE_URL}/ai/search-recommend`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ searchQuery })
+      });
+      return res.json();
     }
   },
 
   user: {
     // New login function
     login: async (email: string, password: string) => {
-        if (USE_MOCK_BACKEND) return MockBackend.login(email, password);
-        // In a real app, this would be a POST request to your auth endpoint
-        // const res = await fetch(`${API_BASE_URL}/auth/login`, { ... });
-        throw new Error("Real login not implemented in this demo.");
+      if (USE_MOCK_BACKEND) return MockBackend.login(email, password);
+      // In a real app, this would be a POST request to your auth endpoint
+      // const res = await fetch(`${API_BASE_URL}/auth/login`, { ... });
+      throw new Error("Real login not implemented in this demo.");
     },
 
     getProfile: async (userEmail: string) => { // Now requires email for mock lookup
@@ -207,7 +239,7 @@ export const api = {
       const res = await fetch(`${API_BASE_URL}/user/profile?email=${userEmail}`); // Pass email for server-side mock
       return res.json();
     },
-    
+
     updateProfile: async (data: UserProfile) => {
       if (USE_MOCK_BACKEND) { return MockBackend.updateProfile(data); }
       const res = await fetch(`${API_BASE_URL}/user/profile`, {
@@ -225,16 +257,16 @@ export const api = {
     },
 
     createOrder: async (items: CartItem[], total: number, customerEmail?: string) => {
-        if (USE_MOCK_BACKEND) return MockBackend.createOrder(items, total, customerEmail);
-        // Real API call would go here, often without needing email directly if session is managed
-        return {} as Order;
+      if (USE_MOCK_BACKEND) return MockBackend.createOrder(items, total, customerEmail);
+      // Real API call would go here, often without needing email directly if session is managed
+      return {} as Order;
     }
   },
 
   ai: {
     chat: async (message: string, language: 'en' | 'bn') => {
       if (USE_MOCK_BACKEND) {
-         throw new Error("Mock backend delegates to client-side AI"); 
+        throw new Error("Mock backend delegates to client-side AI");
       }
       const res = await fetch(`${API_BASE_URL}/ai/chat`, {
         method: 'POST',

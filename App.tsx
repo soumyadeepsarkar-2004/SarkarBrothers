@@ -10,12 +10,14 @@ import ProductDetails from './pages/ProductDetails';
 import Cart from './pages/Cart';
 import Profile from './pages/Profile';
 import AiAssistant from './pages/AiAssistant';
+import VoiceAssistant from './pages/VoiceAssistant';
+import ImageGenerator from './pages/ImageGenerator';
 import WhatsAppOrder from './pages/WhatsAppOrder';
 import Admin from './pages/Admin';
 import { CartProvider } from './contexts/CartContext';
 import { WishlistProvider } from './contexts/WishlistContext';
 import { LanguageProvider } from './contexts/LanguageContext';
-import { AuthProvider } from './contexts/AuthContext'; // Import AuthProvider
+import { AuthProvider } from './contexts/AuthContext';
 
 const ScrollToTop = () => {
   const { pathname } = useLocation();
@@ -32,7 +34,7 @@ const App: React.FC = () => {
     <LanguageProvider>
       <CartProvider>
         <WishlistProvider>
-          <AuthProvider> {/* Wrap the app with AuthProvider */}
+          <AuthProvider>
             <HashRouter>
               <ScrollToTop />
               <div className="flex flex-col min-h-screen">
@@ -44,6 +46,8 @@ const App: React.FC = () => {
                   <Route path="/cart" element={<Cart />} />
                   <Route path="/profile" element={<Profile />} />
                   <Route path="/ai-assistant" element={<AiAssistant />} />
+                  <Route path="/voice-assistant" element={<VoiceAssistant />} />
+                  <Route path="/image-generator" element={<ImageGenerator />} />
                   <Route path="/whatsapp-order" element={<WhatsAppOrder />} />
                   <Route path="/admin" element={<Admin />} />
                 </Routes>

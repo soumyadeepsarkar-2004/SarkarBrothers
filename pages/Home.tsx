@@ -107,7 +107,7 @@ const Home: React.FC = () => {
             
             <div className="flex-1 w-full max-w-[600px] lg:max-w-none relative">
               <div className="aspect-[4/3] rounded-2xl overflow-hidden shadow-2xl bg-gray-100 dark:bg-gray-800 relative group">
-                <div className="w-full h-full bg-center bg-cover transition-transform duration-700 group-hover:scale-105" style={{ backgroundImage: 'url("https://images.unsplash.com/photo-1628006121703-e8470a794f83?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D")' }}></div>
+                <div className="w-full h-full bg-center bg-cover transition-transform duration-700 group-hover:scale-105" style={{ backgroundImage: 'url("https://lh3.googleusercontent.com/aida-public/AB6AXuDFvzJSahO8Uu4G_D6cu88g_plzhfzfd273TlaytgcvC3bBNOjvTgf71-GBloQLMV_KcKCsirUf6BpiejGkOCb_1NhPfdvBMYznQ0bocw_oksiu7ink1_Pj3xRRnd2tEUwXuRKSS_fVYwZK8UYfAIxGPm-WcvxQJI2uhCZPPXK93eRh89V3vNLsFhQEt1QeX1Hsx-WopRTPjfggzIBa2fOosRNmTgszVJxRdiRoQtjRw_KsoDuLX1sb01yJAgqSykleal0w4fW1x27O")' }}></div>
                 <div className="absolute bottom-6 left-6 right-6 p-4 bg-white/90 dark:bg-black/80 backdrop-blur-sm rounded-xl border border-white/20 shadow-lg flex items-center justify-between">
                   <div>
                     <p className="text-xs text-gray-500 dark:text-gray-400 uppercase font-bold">Featured</p>
