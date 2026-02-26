@@ -354,95 +354,97 @@ const Navbar: React.FC = () => {
           </header>
         </div>
 
-        {/* Mobile Search Overlay with Backdrop */}
-        {isMobileSearchOpen && (
-          <>
-            {/* Backdrop */}
-            <div
-              className="lg:hidden fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]"
-              onClick={() => {
-                setIsMobileSearchOpen(false);
-                setIsSearchFocused(false);
-                setSearchQuery('');
-                setSuggestions([]);
-              }}
-            ></div>
+      </div>
 
-            {/* Overlay Content */}
-            <div className="lg:hidden fixed inset-0 z-[70] bg-white dark:bg-[#221e10] flex flex-col pt-4 animate-[slideInUp_0.3s_ease-out]">
-              <div className="flex items-center gap-3 px-4 pb-4 border-b border-[#f5f3f0] dark:border-[#3a3629]">
-                <button
-                  className="flex items-center justify-center size-10 rounded-lg hover:bg-[#f5f3f0] dark:hover:bg-[#332e22] transition-colors"
-                  onClick={() => {
-                    setIsMobileSearchOpen(false);
-                    setIsSearchFocused(false);
-                    setSearchQuery('');
-                    setSuggestions([]);
-                  }}
-                  aria-label={t('nav.close_mobile_search')}
-                >
-                  <span className="material-symbols-outlined">close</span>
-                </button>
-                <form onSubmit={handleSearchSubmit} className="flex-1 relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#8a8060]">
-                    <span className="material-symbols-outlined">search</span>
-                  </div>
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={handleSearchChange}
-                    onFocus={() => setIsSearchFocused(true)} // Keep focus active while in overlay
-                    ref={mobileSearchInputRef}
-                    className="block w-full pl-10 pr-3 py-2 border-none rounded-lg bg-[#f5f3f0] dark:bg-[#2a261a] text-[#181611] dark:text-white placeholder-[#8a8060] focus:ring-2 focus:ring-primary focus:bg-white dark:focus:bg-[#332e22] transition-colors duration-300 sm:text-sm"
-                    placeholder={t('nav.search_placeholder')}
-                    aria-label={t('nav.search_placeholder')}
-                  />
-                </form>
-              </div>
-              <div className="flex-1 overflow-y-auto relative py-2" ref={searchContainerRef}> {/* Use searchContainerRef for click outside logic */}
-                {renderSuggestions()}
-              </div>
+      {/* Mobile Search Overlay — rendered OUTSIDE the sticky navbar so backdrop-filter doesn't trap fixed positioning */}
+      {isMobileSearchOpen && (
+        <>
+          {/* Backdrop */}
+          <div
+            className="lg:hidden fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]"
+            onClick={() => {
+              setIsMobileSearchOpen(false);
+              setIsSearchFocused(false);
+              setSearchQuery('');
+              setSuggestions([]);
+            }}
+          ></div>
+
+          {/* Overlay Content */}
+          <div className="lg:hidden fixed inset-0 z-[70] bg-white dark:bg-[#221e10] flex flex-col pt-4 animate-[slideInUp_0.3s_ease-out]">
+            <div className="flex items-center gap-3 px-4 pb-4 border-b border-[#f5f3f0] dark:border-[#3a3629]">
+              <button
+                className="flex items-center justify-center size-10 rounded-lg hover:bg-[#f5f3f0] dark:hover:bg-[#332e22] transition-colors"
+                onClick={() => {
+                  setIsMobileSearchOpen(false);
+                  setIsSearchFocused(false);
+                  setSearchQuery('');
+                  setSuggestions([]);
+                }}
+                aria-label={t('nav.close_mobile_search')}
+              >
+                <span className="material-symbols-outlined">close</span>
+              </button>
+              <form onSubmit={handleSearchSubmit} className="flex-1 relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#8a8060]">
+                  <span className="material-symbols-outlined">search</span>
+                </div>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={handleSearchChange}
+                  onFocus={() => setIsSearchFocused(true)}
+                  ref={mobileSearchInputRef}
+                  className="block w-full pl-10 pr-3 py-2 border-none rounded-lg bg-[#f5f3f0] dark:bg-[#2a261a] text-[#181611] dark:text-white placeholder-[#8a8060] focus:ring-2 focus:ring-primary focus:bg-white dark:focus:bg-[#332e22] transition-colors duration-300 sm:text-sm"
+                  placeholder={t('nav.search_placeholder')}
+                  aria-label={t('nav.search_placeholder')}
+                />
+              </form>
             </div>
-          </>
-        )}
-
-        {/* Mobile Menu Overlay */}
-        {isMobileMenuOpen && (
-          <div className="lg:hidden fixed inset-0 z-[60]">
-            <div className="absolute inset-0 bg-black/60" onClick={() => setIsMobileMenuOpen(false)}></div>
-            <div className="fixed top-0 left-0 bottom-0 w-64 bg-white dark:bg-[#221e10] shadow-lg z-[70] animate-[slideInLeft_0.3s_ease-out] flex flex-col">
-              <div className="flex items-center justify-between h-16 sm:h-20 px-4 border-b border-[#f5f3f0] dark:border-[#3a3629]">
-                <Link to="/" className="flex items-center gap-2">
-                  <div className="size-8 text-primary">
-                    <span className="material-symbols-outlined" style={{ fontSize: '32px', fontVariationSettings: "'FILL' 1" }}>toys</span>
-                  </div>
-                  <h2 className="text-[#181611] dark:text-white text-xl font-bold tracking-tight">ToyWonder</h2>
-                </Link>
-                <button
-                  className="flex items-center justify-center size-10 rounded-lg hover:bg-[#f5f3f0] dark:hover:bg-[#332e22] transition-colors"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  aria-label={t('nav.close_mobile_menu')}
-                >
-                  <span className="material-symbols-outlined">close</span>
-                </button>
-              </div>
-              <nav className="flex-1 p-4 space-y-2">
-                <Link to="/shop" onClick={() => setIsMobileMenuOpen(false)} className={`block px-4 py-3 rounded-lg font-medium transition-colors ${location.pathname === '/shop' ? 'bg-primary/20 text-primary' : 'hover:bg-[#f5f3f0] dark:hover:bg-[#332e22]'}`}>{t('nav.shop')}</Link>
-                <Link to="/ai-assistant" onClick={() => setIsMobileMenuOpen(false)} className={`block px-4 py-3 rounded-lg font-medium transition-colors ${location.pathname === '/ai-assistant' ? 'text-primary' : 'hover:bg-[#f5f3f0] dark:hover:bg-[#332e22]'}`}>{t('nav.giftbot')}</Link>
-                <Link to="/voice-assistant" onClick={() => setIsMobileMenuOpen(false)} className={`block px-4 py-3 rounded-lg font-medium transition-colors ${location.pathname === '/voice-assistant' ? 'text-primary' : 'hover:bg-[#f5f3f0] dark:hover:bg-[#332e22]'}`}>Voice AI</Link>
-                <Link to="/image-generator" onClick={() => setIsMobileMenuOpen(false)} className={`block px-4 py-3 rounded-lg font-medium transition-colors ${location.pathname === '/image-generator' ? 'text-primary' : 'hover:bg-[#f5f3f0] dark:hover:bg-[#332e22]'}`}>Image Generator</Link>
-                <Link to="/whatsapp-order" onClick={() => setIsMobileMenuOpen(false)} className="block px-4 py-3 rounded-lg font-medium hover:bg-[#f5f3f0] dark:hover:bg-[#332e22] transition-colors">{t('nav.order_whatsapp')}</Link>
-                {isAuthenticated && (
-                  <Link to="/profile" onClick={() => setIsMobileMenuOpen(false)} className={`block px-4 py-3 rounded-lg font-medium transition-colors ${location.pathname === '/profile' ? 'bg-primary/20 text-primary' : 'hover:bg-[#f5f3f0] dark:hover:bg-[#332e22]'}`}>{t('nav.profile')}</Link>
-                )}
-                {isAuthenticated && role === 'admin' && (
-                  <Link to="/admin" onClick={() => setIsMobileMenuOpen(false)} className={`block px-4 py-3 rounded-lg font-medium transition-colors ${location.pathname === '/admin' ? 'bg-primary/20 text-primary' : 'hover:bg-[#f5f3f0] dark:hover:bg-[#332e22]'}`}>Admin</Link>
-                )}
-              </nav>
+            <div className="flex-1 overflow-y-auto relative py-2" ref={searchContainerRef}>
+              {renderSuggestions()}
             </div>
           </div>
-        )}
-      </div>
+        </>
+      )}
+
+      {/* Mobile Menu Overlay — rendered OUTSIDE the sticky navbar so backdrop-filter doesn't trap fixed positioning */}
+      {isMobileMenuOpen && (
+        <div className="lg:hidden fixed inset-0 z-[60]">
+          <div className="absolute inset-0 bg-black/60" onClick={() => setIsMobileMenuOpen(false)}></div>
+          <div className="fixed top-0 left-0 bottom-0 w-64 bg-white dark:bg-[#221e10] shadow-lg z-[70] animate-[slideInLeft_0.3s_ease-out] flex flex-col">
+            <div className="flex items-center justify-between h-16 sm:h-20 px-4 border-b border-[#f5f3f0] dark:border-[#3a3629]">
+              <Link to="/" className="flex items-center gap-2">
+                <div className="size-8 text-primary">
+                  <span className="material-symbols-outlined" style={{ fontSize: '32px', fontVariationSettings: "'FILL' 1" }}>toys</span>
+                </div>
+                <h2 className="text-[#181611] dark:text-white text-xl font-bold tracking-tight">ToyWonder</h2>
+              </Link>
+              <button
+                className="flex items-center justify-center size-10 rounded-lg hover:bg-[#f5f3f0] dark:hover:bg-[#332e22] transition-colors"
+                onClick={() => setIsMobileMenuOpen(false)}
+                aria-label={t('nav.close_mobile_menu')}
+              >
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+            <nav className="flex-1 p-4 space-y-2">
+              <Link to="/shop" onClick={() => setIsMobileMenuOpen(false)} className={`block px-4 py-3 rounded-lg font-medium transition-colors ${location.pathname === '/shop' ? 'bg-primary/20 text-primary' : 'hover:bg-[#f5f3f0] dark:hover:bg-[#332e22]'}`}>{t('nav.shop')}</Link>
+              <Link to="/ai-assistant" onClick={() => setIsMobileMenuOpen(false)} className={`block px-4 py-3 rounded-lg font-medium transition-colors ${location.pathname === '/ai-assistant' ? 'text-primary' : 'hover:bg-[#f5f3f0] dark:hover:bg-[#332e22]'}`}>{t('nav.giftbot')}</Link>
+              <Link to="/voice-assistant" onClick={() => setIsMobileMenuOpen(false)} className={`block px-4 py-3 rounded-lg font-medium transition-colors ${location.pathname === '/voice-assistant' ? 'text-primary' : 'hover:bg-[#f5f3f0] dark:hover:bg-[#332e22]'}`}>Voice AI</Link>
+              <Link to="/image-generator" onClick={() => setIsMobileMenuOpen(false)} className={`block px-4 py-3 rounded-lg font-medium transition-colors ${location.pathname === '/image-generator' ? 'text-primary' : 'hover:bg-[#f5f3f0] dark:hover:bg-[#332e22]'}`}>Image Generator</Link>
+              <Link to="/whatsapp-order" onClick={() => setIsMobileMenuOpen(false)} className="block px-4 py-3 rounded-lg font-medium hover:bg-[#f5f3f0] dark:hover:bg-[#332e22] transition-colors">{t('nav.order_whatsapp')}</Link>
+              {isAuthenticated && (
+                <Link to="/profile" onClick={() => setIsMobileMenuOpen(false)} className={`block px-4 py-3 rounded-lg font-medium transition-colors ${location.pathname === '/profile' ? 'bg-primary/20 text-primary' : 'hover:bg-[#f5f3f0] dark:hover:bg-[#332e22]'}`}>{t('nav.profile')}</Link>
+              )}
+              {isAuthenticated && role === 'admin' && (
+                <Link to="/admin" onClick={() => setIsMobileMenuOpen(false)} className={`block px-4 py-3 rounded-lg font-medium transition-colors ${location.pathname === '/admin' ? 'bg-primary/20 text-primary' : 'hover:bg-[#f5f3f0] dark:hover:bg-[#332e22]'}`}>Admin</Link>
+              )}
+            </nav>
+          </div>
+        </div>
+      )}
+
       <LoginModal isOpen={isLoginModalOpen} onClose={() => setIsLoginModalOpen(false)} />
     </>
   );
