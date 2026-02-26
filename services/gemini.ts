@@ -116,22 +116,21 @@ const tryGeminiImageGenerate = async (prompt: string): Promise<string | null> =>
 
 /**
  * Helper: Free AI image generation via Pollinations.ai (no API key needed).
+ * Returns the image URL directly — avoids CORS issues with fetch().
  */
 const tryPollinationsGenerate = async (prompt: string, width: number, height: number): Promise<string> => {
   const encoded = encodeURIComponent(`${prompt}, colorful kids toy illustration, bright cheerful, white background`);
-  const url = `https://image.pollinations.ai/prompt/${encoded}?width=${width}&height=${height}&nologo=true&seed=${Date.now()}`;
+  const url = `https://image.pollinations.ai/prompt/${encoded}?width=${Math.min(width, 1024)}&height=${Math.min(height, 1024)}&nologo=true&seed=${Date.now()}`;
 
-  // Verify the URL actually returns an image
-  const res = await fetch(url);
-  if (!res.ok) throw new Error('Pollinations API returned an error');
-  const blob = await res.blob();
-  if (!blob.type.startsWith('image/')) throw new Error('Did not receive an image');
-
+  // Validate URL loads as an image using an Image element (no CORS issues)
   return new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => resolve(reader.result as string);
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => resolve(url);
+    img.onerror = () => reject(new Error('Pollinations image failed to load'));
+    img.src = url;
+    // Timeout after 45 seconds (Pollinations can be slow)
+    setTimeout(() => reject(new Error('Image generation timed out')), 45000);
   });
 };
 
@@ -153,13 +152,13 @@ export const generateImageWithPrompt = async (
 
   // Strategy 3: Pollinations.ai (free, no API key needed)
   try {
-    return await tryPollinationsGenerate(prompt, Math.min(w, 1024), Math.min(h, 1024));
+    return await tryPollinationsGenerate(prompt, w, h);
   } catch (e: any) {
     console.error('Pollinations fallback also failed:', e);
   }
 
   throw new Error(
-    'Image generation failed. Please check your internet connection and try again.'
+    'All image generation services are currently unavailable. Please try again in a moment.'
   );
 };
 
