@@ -98,14 +98,20 @@ const ImageGenerator: React.FC = () => {
         }
     };
 
-    const handleDownload = () => {
+    const handleDownload = async () => {
         if (generatedImageUrl) {
-            const link = document.createElement('a');
-            link.href = generatedImageUrl;
-            link.download = `toywonder-${activeTab}-${Date.now()}.png`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            // For base64 data URIs, direct download works
+            if (generatedImageUrl.startsWith('data:')) {
+                const link = document.createElement('a');
+                link.href = generatedImageUrl;
+                link.download = `toywonder-${activeTab}-${Date.now()}.png`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            } else {
+                // For external URLs, open in new tab (can't force download cross-origin)
+                window.open(generatedImageUrl, '_blank');
+            }
         }
     };
 

@@ -116,21 +116,31 @@ const tryGeminiImageGenerate = async (prompt: string): Promise<string | null> =>
 
 /**
  * Helper: Free AI image generation via Pollinations.ai (no API key needed).
- * Returns the image URL directly — avoids CORS issues with fetch().
+ * Returns the image URL directly — validated via Image element preload.
  */
 const tryPollinationsGenerate = async (prompt: string, width: number, height: number): Promise<string> => {
   const encoded = encodeURIComponent(`${prompt}, colorful kids toy illustration, bright cheerful, white background`);
-  const url = `https://image.pollinations.ai/prompt/${encoded}?width=${Math.min(width, 1024)}&height=${Math.min(height, 1024)}&nologo=true&seed=${Date.now()}`;
+  const clampedW = Math.min(width, 1024);
+  const clampedH = Math.min(height, 1024);
+  const url = `https://image.pollinations.ai/prompt/${encoded}?width=${clampedW}&height=${clampedH}&nologo=true&seed=${Date.now()}`;
 
-  // Validate URL loads as an image using an Image element (no CORS issues)
+  // Validate URL loads as an image using an Image element
   return new Promise<string>((resolve, reject) => {
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = () => resolve(url);
-    img.onerror = () => reject(new Error('Pollinations image failed to load'));
+    let settled = false;
+    const img = new window.Image();
+    // Do NOT set crossOrigin — Pollinations may not support CORS headers,
+    // but we only need to confirm the URL loads (we render via <img src>)
+    img.onload = () => {
+      if (!settled) { settled = true; resolve(url); }
+    };
+    img.onerror = () => {
+      if (!settled) { settled = true; reject(new Error('Pollinations image failed to load')); }
+    };
     img.src = url;
-    // Timeout after 45 seconds (Pollinations can be slow)
-    setTimeout(() => reject(new Error('Image generation timed out')), 45000);
+    // Timeout after 60 seconds (Pollinations generation can be slow on first call)
+    setTimeout(() => {
+      if (!settled) { settled = true; reject(new Error('Image generation timed out')); }
+    }, 60000);
   });
 };
 
