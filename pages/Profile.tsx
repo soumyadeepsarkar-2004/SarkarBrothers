@@ -540,10 +540,42 @@ const Profile: React.FC = () => {
   }
 
   return (
-    <div className="flex-1 flex overflow-hidden relative">
-      <div className="layout-container flex h-full grow w-full max-w-[1440px] mx-auto">
-        {/* Sidebar */}
-        <aside className="hidden lg:flex flex-col w-[280px] bg-white dark:bg-[#1a170d] border-r border-[#e6e3db] dark:border-[#332f20] h-full overflow-y-auto">
+    <div className="flex-1 flex flex-col">
+      {/* Mobile User Header */}
+      <div className="lg:hidden bg-white dark:bg-[#1a170d] border-b border-[#e6e3db] dark:border-[#332f20] px-4 py-3">
+        <div className="flex items-center gap-3">
+          <img className="size-12 rounded-full object-cover border-2 border-primary/30" src={userProfile.avatar} alt={userProfile.name} />
+          <div className="flex-1 min-w-0">
+            <h2 className="text-base font-bold text-[#181611] dark:text-white truncate">{userProfile.name}</h2>
+            <p className="text-xs text-[#8a8060] truncate">{userProfile.email}</p>
+          </div>
+          <button onClick={logout} className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors" title="Logout">
+            <span className="material-symbols-outlined text-xl">logout</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Mobile Tab Bar */}
+      <div className="lg:hidden bg-white dark:bg-[#1a170d] border-b border-[#e6e3db] dark:border-[#332f20] sticky top-16 z-10">
+        <div className="flex overflow-x-auto no-scrollbar">
+          {(['active', 'past', 'wishlist', 'profile', 'addresses'] as const).map(tab => (
+            <button key={tab} onClick={() => setActiveTab(tab)}
+              className={`flex items-center gap-1.5 px-4 py-3 text-xs font-bold whitespace-nowrap border-b-2 transition-colors ${
+                activeTab === tab ? 'border-primary text-primary' : 'border-transparent text-[#8a8060] hover:text-[#181611] dark:hover:text-white'
+              }`}>
+              <span className="material-symbols-outlined text-base">{
+                tab === 'active' ? 'package_2' : tab === 'past' ? 'archive' : tab === 'wishlist' ? 'favorite' : tab === 'profile' ? 'person' : 'location_on'
+              }</span>
+              {t(`profile.tab.${tab}`)}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col lg:flex-row max-w-[1440px] mx-auto w-full">
+        {/* Desktop Sidebar */}
+        <aside className="hidden lg:flex flex-col w-[280px] bg-white dark:bg-[#1a170d] border-r border-[#e6e3db] dark:border-[#332f20] shrink-0">
           <div className="p-6 border-b border-[#e6e3db] dark:border-[#332f20]">
             <img className="size-24 rounded-full mx-auto mb-4 object-cover" src={userProfile.avatar} alt={userProfile.name} />
             <h2 className="text-center text-xl font-bold text-[#181611] dark:text-white">{userProfile.name}</h2>
@@ -579,7 +611,7 @@ const Profile: React.FC = () => {
         </aside>
 
         {/* Content Area */}
-        <section className="flex flex-col flex-1 min-w-0 bg-background-light dark:bg-background-dark overflow-y-auto px-4 md:px-12 py-8">
+        <section className="flex-1 min-w-0 bg-background-light dark:bg-background-dark px-4 md:px-8 lg:px-12 py-6 lg:py-8">
             <div className="max-w-[1000px] w-full mx-auto flex flex-col gap-8 pb-20">
                 {activeTab === 'profile' && (
                     <div className="bg-white dark:bg-[#1a170d] rounded-2xl shadow-sm border border-[#e6e3db] dark:border-[#332f20] p-6">

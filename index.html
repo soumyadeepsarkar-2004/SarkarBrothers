@@ -104,6 +104,39 @@
         transform: translateY(0);
       }
     }
+
+    /* Slide in left animation for mobile sidebar */
+    @keyframes slideInLeft {
+      0% {
+        transform: translateX(-100%);
+      }
+
+      100% {
+        transform: translateX(0);
+      }
+    }
+
+    /* Fade in animation */
+    @keyframes fadeIn {
+      0% {
+        opacity: 0;
+      }
+
+      100% {
+        opacity: 1;
+      }
+    }
+
+    /* Float animation for hero section */
+    @keyframes float {
+      0%, 100% {
+        transform: translateY(0);
+      }
+
+      50% {
+        transform: translateY(-20px);
+      }
+    }
   </style>
 </head>
 

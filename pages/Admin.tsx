@@ -110,7 +110,7 @@ const Admin: React.FC = () => {
   );
 
   return (
-    <div className="flex h-screen bg-gray-100 dark:bg-gray-900 font-body text-gray-800 dark:text-gray-200">
+    <div className="flex flex-1 min-h-[calc(100vh-4rem)] bg-gray-100 dark:bg-gray-900 font-body text-gray-800 dark:text-gray-200">
       {/* Sidebar for Desktop */}
       <aside className="w-64 bg-white dark:bg-gray-800 shadow-md hidden lg:flex flex-col">
         <SidebarContent />
@@ -127,7 +127,7 @@ const Admin: React.FC = () => {
       )}
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col min-w-0">
         <header className="h-16 bg-white dark:bg-gray-800 shadow-sm shrink-0 flex items-center justify-between px-6 lg:justify-end">
             <button className="lg:hidden text-gray-600 dark:text-gray-300" onClick={() => setSidebarOpen(true)}>
                 <span className="material-symbols-outlined">menu</span>

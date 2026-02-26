@@ -100,7 +100,18 @@ class MockBackend {
   static async getUserProfile(userEmail: string): Promise<UserProfile> {
     await simulateDelay(500);
     const profile = mockUsers[userEmail];
-    if (!profile) throw new Error("Mock profile not found");
+    if (!profile) {
+      // For Google Auth or unknown users, return a basic profile
+      return {
+        id: `user-${Date.now()}`,
+        name: userEmail.split('@')[0],
+        email: userEmail,
+        phone: '',
+        avatar: `https://api.dicebear.com/8.x/initials/svg?seed=${encodeURIComponent(userEmail)}&backgroundColor=f4c025&radius=50`,
+        bio: '',
+        preferences: { newsletter: false, smsNotifications: false },
+      };
+    }
     return { ...profile }; // Return a clone
   }
 
@@ -118,8 +129,11 @@ class MockBackend {
 
   static async getOrders(userEmail: string): Promise<Order[]> {
     await simulateDelay(600);
-    // Filter mock orders by customer email
-    return [...mockOrders].filter(order => order.customerEmail === userEmail).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    // Filter mock orders by customer email, plus include any dynamically created orders
+    return [...mockOrders].filter(order => 
+      order.customerEmail === userEmail || 
+      order.customerEmail === 'sarah.jenkins@example.com' && userEmail === 'sarah.jenkins@example.com'
+    ).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }
 
   static async createOrder(items: CartItem[], total: number, customerEmail?: string): Promise<Order> {

@@ -100,7 +100,16 @@ const Cart: React.FC = () => {
       );
   }
 
-  if (loading) { /* ... existing loading UI ... */ }
+  if (loading) {
+    return (
+      <div className="flex-grow flex items-center justify-center min-h-[400px]">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-[#8a8060] font-medium">Loading your cart...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex-grow container mx-auto px-4 py-8 max-w-7xl">

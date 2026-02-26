@@ -408,9 +408,9 @@ const Navbar: React.FC = () => {
 
         {/* Mobile Menu Overlay */}
         {isMobileMenuOpen && (
-          <div className="lg:hidden fixed inset-0 z-40">
+          <div className="lg:hidden fixed inset-0 z-[60]">
             <div className="absolute inset-0 bg-black/60" onClick={() => setIsMobileMenuOpen(false)}></div>
-            <div className="fixed top-0 left-0 bottom-0 w-64 bg-white dark:bg-[#221e10] shadow-lg z-50 animate-[slideInLeft_0.3s_ease-out] flex flex-col">
+            <div className="fixed top-0 left-0 bottom-0 w-64 bg-white dark:bg-[#221e10] shadow-lg z-[70] animate-[slideInLeft_0.3s_ease-out] flex flex-col">
               <div className="flex items-center justify-between h-16 sm:h-20 px-4 border-b border-[#f5f3f0] dark:border-[#3a3629]">
                 <Link to="/" className="flex items-center gap-2">
                   <div className="size-8 text-primary">
@@ -436,7 +436,7 @@ const Navbar: React.FC = () => {
                   <Link to="/profile" onClick={() => setIsMobileMenuOpen(false)} className={`block px-4 py-3 rounded-lg font-medium transition-colors ${location.pathname === '/profile' ? 'bg-primary/20 text-primary' : 'hover:bg-[#f5f3f0] dark:hover:bg-[#332e22]'}`}>{t('nav.profile')}</Link>
                 )}
                 {isAuthenticated && role === 'admin' && (
-                  <Link to="/admin" onClick={() => setIsMobileMenuOpen(false)} className={`block px-4 py-3 rounded-lg font-medium transition-colors hover:bg-[#f5f3f0] dark:hover:bg-[#332e22]'}`}>Admin</Link>
+                  <Link to="/admin" onClick={() => setIsMobileMenuOpen(false)} className={`block px-4 py-3 rounded-lg font-medium transition-colors ${location.pathname === '/admin' ? 'bg-primary/20 text-primary' : 'hover:bg-[#f5f3f0] dark:hover:bg-[#332e22]'}`}>Admin</Link>
                 )}
               </nav>
             </div>

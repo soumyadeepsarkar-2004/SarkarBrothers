@@ -30,6 +30,7 @@ const Shop: React.FC = () => {
   const [generalRecommendations, setGeneralRecommendations] = useState<Product[]>([]); // For non-search recs
   const [aiRecommendations, setAiRecommendations] = useState<Product[]>([]); // For search-based AI recs
   const [loading, setLoading] = useState(true);
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   const { addToCart } = useCart();
   const { toggleWishlist, isInWishlist } = useWishlist();
@@ -112,13 +113,93 @@ const Shop: React.FC = () => {
         <img alt="Hero Banner" className="w-full h-[320px] md:h-[400px] object-cover transition-transform duration-700 group-hover:scale-105" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCVr3UcNybOmcJCUOmWW9ZAvNGeC6DCuxSRJMnmWcjX2kQ8aT40bjlb-HEs5tcFUbzTffJiYUjPw7_Cea00o5ht7IEvbVDjd2oC8hnaDrbNQf-g059sbrwYAeUuNZR7kL13BuFsy6sPe5JJMbI68Md5A76EMrwGUlQ6bWZ8i9J0CM95wKUbcaBWv0sBqeZDwPKpFlIAkGLJMgPTbdhARAz-uE2k9WRCoSTl6PGNRthLuWdICKEvvg-ZhH5V0lj3Wuhzt7S77QGZ_405" />
       </div>
 
+      {/* Mobile Filter Bar */}
+      <div className="lg:hidden flex items-center gap-3 mb-4 overflow-x-auto no-scrollbar">
+        <button
+          onClick={() => setMobileFiltersOpen(!mobileFiltersOpen)}
+          className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-white dark:bg-[#1a170e] border border-[#f5f3f0] dark:border-[#332f25] text-sm font-medium shrink-0"
+        >
+          <span className="material-symbols-outlined text-base">tune</span>
+          {t('shop.filters')}
+          {(categoryFilter.length + priceFilter.length) > 0 && (
+            <span className="bg-primary text-[#181611] text-[10px] font-bold px-1.5 py-0.5 rounded-full">{categoryFilter.length + priceFilter.length}</span>
+          )}
+        </button>
+        {categoryFilter.map(cat => (
+          <span key={cat} className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-bold shrink-0">
+            {cat}
+            <button onClick={() => setCategoryFilter(categoryFilter.filter(c => c !== cat))} className="hover:text-red-500">
+              <span className="material-symbols-outlined text-sm">close</span>
+            </button>
+          </span>
+        ))}
+        {priceFilter.map(p => (
+          <span key={p} className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-bold shrink-0">
+            {p}
+            <button onClick={() => setPriceFilter(priceFilter.filter(pr => pr !== p))} className="hover:text-red-500">
+              <span className="material-symbols-outlined text-sm">close</span>
+            </button>
+          </span>
+        ))}
+        {(categoryFilter.length + priceFilter.length) > 0 && (
+          <button onClick={() => { setCategoryFilter([]); setPriceFilter([]); }} className="text-xs text-red-500 font-bold shrink-0 px-2">
+            {t('shop.reset')}
+          </button>
+        )}
+      </div>
+
+      {/* Mobile Filter Drawer */}
+      {mobileFiltersOpen && (
+        <div className="lg:hidden fixed inset-0 z-50">
+          <div className="absolute inset-0 bg-black/60" onClick={() => setMobileFiltersOpen(false)}></div>
+          <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-[#1a170e] rounded-t-2xl max-h-[70vh] overflow-y-auto z-50 animate-[slideInUp_0.3s_ease-out]">
+            <div className="sticky top-0 bg-white dark:bg-[#1a170e] px-6 py-4 border-b border-[#f5f3f0] dark:border-[#332f25] flex items-center justify-between">
+              <h3 className="font-bold text-lg dark:text-white">{t('shop.filters')}</h3>
+              <button onClick={() => setMobileFiltersOpen(false)} className="p-2 hover:bg-[#f5f3f0] dark:hover:bg-[#332f25] rounded-lg">
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+            <div className="p-6 space-y-6">
+              <div className="flex flex-col gap-3">
+                <span className="font-bold text-sm dark:text-white">{t('shop.categories')}</span>
+                <div className="flex flex-wrap gap-2">
+                  {['Educational', 'Plushies', 'Outdoor Fun', 'Arts & Crafts', 'Robots', 'Gifts'].map(cat => (
+                    <button key={cat}
+                      onClick={() => categoryFilter.includes(cat) ? setCategoryFilter(categoryFilter.filter(c => c !== cat)) : setCategoryFilter([...categoryFilter, cat])}
+                      className={`px-3 py-2 rounded-lg text-sm font-medium border transition-colors ${categoryFilter.includes(cat) ? 'bg-primary text-[#181611] border-primary' : 'border-[#e6e3db] dark:border-[#332f25] hover:border-primary'}`}>
+                      {cat}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="flex flex-col gap-3">
+                <span className="font-bold text-sm dark:text-white">{t('shop.price_range')}</span>
+                <div className="flex flex-wrap gap-2">
+                  {PRICE_RANGES.map(range => (
+                    <button key={range.label}
+                      onClick={() => priceFilter.includes(range.label) ? setPriceFilter(priceFilter.filter(p => p !== range.label)) : setPriceFilter([...priceFilter, range.label])}
+                      className={`px-3 py-2 rounded-lg text-sm font-medium border transition-colors ${priceFilter.includes(range.label) ? 'bg-primary text-[#181611] border-primary' : 'border-[#e6e3db] dark:border-[#332f25] hover:border-primary'}`}>
+                      {range.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="sticky bottom-0 bg-white dark:bg-[#1a170e] px-6 py-4 border-t border-[#f5f3f0] dark:border-[#332f25] flex gap-3">
+              <button onClick={() => { setCategoryFilter([]); setPriceFilter([]); }} className="flex-1 py-3 rounded-xl border border-[#e6e3db] dark:border-[#332f25] font-bold text-sm">{t('shop.reset')}</button>
+              <button onClick={() => setMobileFiltersOpen(false)} className="flex-1 py-3 rounded-xl bg-primary text-[#181611] font-bold text-sm">Apply Filters</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-col lg:flex-row gap-8">
         {/* Sidebar Filters */}
         <aside className="hidden lg:flex flex-col w-64 shrink-0 gap-6 sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto pr-2">
           <div className="flex items-center justify-between">
             <h3 className="font-bold text-lg dark:text-white">{t('shop.filters')}</h3>
             <button
-              onClick={() => { setCategoryFilter([]); setPriceFilter([]); /* searchTerm is managed by URL, no local state clear needed */ }}
+              onClick={() => { setCategoryFilter([]); setPriceFilter([]); }}
               className="text-xs text-[#8a8060] font-medium hover:text-primary transition-colors"
             >
               {t('shop.reset')}
