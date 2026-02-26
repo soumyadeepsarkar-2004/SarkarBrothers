@@ -1,5 +1,4 @@
 <div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
 </div>
 
 # 🎁 ToyWonder - Unwrap the Magic of Play
@@ -209,7 +208,7 @@ This project is licensed under the MIT License.
 
 ## 📞 Support
 
-For support, email your-email@example.com or open an issue on GitHub.
+For support, email shannking969@gmail.com or open an issue on GitHub.
 
 ---
 
