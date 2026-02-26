@@ -9,13 +9,13 @@ export default defineConfig(({ mode }) => {
   const API_BASE_URL = env.API_BASE_URL || process.env.API_BASE_URL || '';
   const USE_MOCK = env.USE_MOCK_BACKEND || process.env.USE_MOCK_BACKEND || 'true';
 
-  // Firebase config
-  const FIREBASE_API_KEY = env.FIREBASE_API_KEY || process.env.FIREBASE_API_KEY || '';
-  const FIREBASE_AUTH_DOMAIN = env.FIREBASE_AUTH_DOMAIN || process.env.FIREBASE_AUTH_DOMAIN || '';
-  const FIREBASE_PROJECT_ID = env.FIREBASE_PROJECT_ID || process.env.FIREBASE_PROJECT_ID || '';
-  const FIREBASE_STORAGE_BUCKET = env.FIREBASE_STORAGE_BUCKET || process.env.FIREBASE_STORAGE_BUCKET || '';
-  const FIREBASE_MESSAGING_SENDER_ID = env.FIREBASE_MESSAGING_SENDER_ID || process.env.FIREBASE_MESSAGING_SENDER_ID || '';
-  const FIREBASE_APP_ID = env.FIREBASE_APP_ID || process.env.FIREBASE_APP_ID || '';
+  // Firebase config – .trim() strips stray newlines injected by some CI env-var tools
+  const FIREBASE_API_KEY = (env.FIREBASE_API_KEY || process.env.FIREBASE_API_KEY || '').trim();
+  const FIREBASE_AUTH_DOMAIN = (env.FIREBASE_AUTH_DOMAIN || process.env.FIREBASE_AUTH_DOMAIN || '').trim();
+  const FIREBASE_PROJECT_ID = (env.FIREBASE_PROJECT_ID || process.env.FIREBASE_PROJECT_ID || '').trim();
+  const FIREBASE_STORAGE_BUCKET = (env.FIREBASE_STORAGE_BUCKET || process.env.FIREBASE_STORAGE_BUCKET || '').trim();
+  const FIREBASE_MESSAGING_SENDER_ID = (env.FIREBASE_MESSAGING_SENDER_ID || process.env.FIREBASE_MESSAGING_SENDER_ID || '').trim();
+  const FIREBASE_APP_ID = (env.FIREBASE_APP_ID || process.env.FIREBASE_APP_ID || '').trim();
 
   return {
     server: {

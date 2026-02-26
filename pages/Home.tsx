@@ -77,7 +77,7 @@ const Home: React.FC = () => {
         <div className="absolute bottom-20 left-[10%] w-48 h-48 bg-blue-300/20 rounded-full blur-3xl -z-10 animate-[float_5s_ease-in-out_infinite]"></div>
 
         <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col-reverse lg:flex-row items-center gap-10 lg:gap-16">
+          <div className="flex flex-col lg:flex-row items-center gap-10 lg:gap-16">
             <div className="flex-1 text-center lg:text-left space-y-6">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-yellow-700 dark:text-yellow-400 text-xs font-bold uppercase tracking-wider">
                 <span className="material-symbols-outlined text-sm">celebration</span>
@@ -121,28 +121,6 @@ const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* AI Assistant Banner */}
-      <section className="py-10 px-4">
-        <div className="max-w-[1280px] mx-auto relative overflow-hidden rounded-2xl bg-[#221e10] dark:bg-[#2a261a] text-white p-8 md:p-12 shadow-xl">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-primary/30 rounded-full filter blur-3xl -translate-y-1/2 translate-x-1/2"></div>
-          <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
-            <div className="flex items-start gap-4 max-w-2xl">
-              <div className="bg-primary/20 p-3 rounded-xl shrink-0">
-                <span className="material-symbols-outlined text-primary text-3xl">smart_toy</span>
-              </div>
-              <div>
-                <h3 className="text-2xl font-bold mb-2">{t('home.ai_banner.title')}</h3>
-                <p className="text-gray-300 text-lg">{t('home.ai_banner.text')}</p>
-              </div>
-            </div>
-            <Link to="/ai-assistant" className="shrink-0 bg-white text-[#221e10] hover:bg-gray-100 px-6 py-3 rounded-lg font-bold shadow-md transition-transform active:scale-95 flex items-center gap-2">
-              <span className="material-symbols-outlined fill-current" style={{ fontVariationSettings: "'FILL' 1" }}>chat_bubble</span>
-              {t('home.ai_banner.cta')}
-            </Link>
-          </div>
-        </div>
-      </section>
-
       {/* Trending Section */}
       <section className="py-12 bg-background-light dark:bg-background-dark">
         <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8">
@@ -179,6 +157,28 @@ const Home: React.FC = () => {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* AI Assistant Banner */}
+      <section className="py-10 px-4">
+        <div className="max-w-[1280px] mx-auto relative overflow-hidden rounded-2xl bg-[#221e10] dark:bg-[#2a261a] text-white p-8 md:p-12 shadow-xl">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-primary/30 rounded-full filter blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+          <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
+            <div className="flex items-start gap-4 max-w-2xl">
+              <div className="bg-primary/20 p-3 rounded-xl shrink-0">
+                <span className="material-symbols-outlined text-primary text-3xl">smart_toy</span>
+              </div>
+              <div>
+                <h3 className="text-2xl font-bold mb-2">{t('home.ai_banner.title')}</h3>
+                <p className="text-gray-300 text-lg">{t('home.ai_banner.text')}</p>
+              </div>
+            </div>
+            <Link to="/ai-assistant" className="shrink-0 bg-white text-[#221e10] hover:bg-gray-100 px-6 py-3 rounded-lg font-bold shadow-md transition-transform active:scale-95 flex items-center gap-2">
+              <span className="material-symbols-outlined fill-current" style={{ fontVariationSettings: "'FILL' 1" }}>chat_bubble</span>
+              {t('home.ai_banner.cta')}
+            </Link>
           </div>
         </div>
       </section>

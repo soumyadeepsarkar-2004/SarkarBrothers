@@ -10,13 +10,14 @@ import {
 } from 'firebase/auth';
 
 // Firebase config from environment variables (set in vite.config.ts define)
+// .trim() strips any stray whitespace/newlines injected by CI env var tools
 const firebaseConfig = {
-    apiKey: process.env.FIREBASE_API_KEY || '',
-    authDomain: process.env.FIREBASE_AUTH_DOMAIN || '',
-    projectId: process.env.FIREBASE_PROJECT_ID || '',
-    storageBucket: process.env.FIREBASE_STORAGE_BUCKET || '',
-    messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID || '',
-    appId: process.env.FIREBASE_APP_ID || '',
+    apiKey: (process.env.FIREBASE_API_KEY || '').trim(),
+    authDomain: (process.env.FIREBASE_AUTH_DOMAIN || '').trim(),
+    projectId: (process.env.FIREBASE_PROJECT_ID || '').trim(),
+    storageBucket: (process.env.FIREBASE_STORAGE_BUCKET || '').trim(),
+    messagingSenderId: (process.env.FIREBASE_MESSAGING_SENDER_ID || '').trim(),
+    appId: (process.env.FIREBASE_APP_ID || '').trim(),
 };
 
 // Only initialize Firebase if config is present
