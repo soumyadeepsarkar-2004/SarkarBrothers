@@ -1,5 +1,7 @@
 
 import { GoogleGenAI } from "@google/genai";
+import { products } from '../data';
+import { Product } from '../types';
 
 const API_KEY = process.env.GEMINI_API_KEY || '';
 let ai: GoogleGenAI | null = null;
@@ -13,43 +15,190 @@ try {
   ai = null;
 }
 
-// ── Text Generation (GiftBot) ────────────────────────────────────────────────
+// ── Product Catalog for AI Context ───────────────────────────────────────────
+
+const buildProductCatalog = (): string => {
+  return products.map(p => {
+    const parts = [`${p.name} (₹${p.price}${p.originalPrice ? `, was ₹${p.originalPrice}` : ''})`,
+      `Category: ${p.category}`,
+      `Rating: ${p.rating}★ (${p.reviews} reviews)`,
+      `Stock: ${p.stock > 0 ? `${p.stock} available` : 'Out of stock'}`];
+    if (p.badge) parts.push(`Badge: ${p.badge}`);
+    if (p.description) parts.push(`Description: ${p.description}`);
+    return parts.join(' | ');
+  }).join('\n');
+};
+
+const PRODUCT_CATALOG = buildProductCatalog();
+
+const SYSTEM_PROMPT = `You are GiftBot, the friendly AI shopping assistant for ToyWonder — a cheerful, colorful children's toy shop.
+
+YOUR ROLE:
+- Help customers find the perfect toy or gift
+- Answer questions about products, prices, categories, and availability
+- Make personalized recommendations based on age, interests, budget, and occasion
+- Be warm, enthusiastic, and concise (under 100 words per response)
+- Use relevant emojis to keep the tone playful and kid-friendly
+
+PRODUCT CATALOG:
+${PRODUCT_CATALOG}
+
+CATEGORIES: Educational, Outdoor Fun, Plushies, Arts & Crafts, Robots, Gifts
+
+SHOP POLICIES:
+- Free shipping on orders above ₹2,000
+- Standard delivery: 3-5 business days
+- Easy returns within 7 days
+- Safe, BPA-free materials
+
+RULES:
+- Always recommend products FROM the catalog above — never invent products
+- Mention specific product names and prices when recommending
+- If a query is unrelated to toys/gifts, politely redirect to toy shopping
+- If a product is out of stock, say so and suggest alternatives
+- For gift queries, ask about the recipient's age and interests if not provided
+- Keep responses concise, helpful, and action-oriented`;
+
+// ── Chat Message Type ────────────────────────────────────────────────────────
+
+export interface ChatMessage {
+  role: 'user' | 'model';
+  text: string;
+}
+
+// ── Smart Local Fallback (no API key needed) ─────────────────────────────────
+
+const localChatFallback = (message: string, language: 'en' | 'bn'): string => {
+  const input = message.toLowerCase();
+  const bn = language === 'bn';
+
+  // Price-based queries
+  const priceMatch = input.match(/under\s*₹?\s*(\d+)|below\s*₹?\s*(\d+)|budget\s*₹?\s*(\d+)|within\s*₹?\s*(\d+)/);
+  if (priceMatch) {
+    const maxPrice = parseInt(priceMatch[1] || priceMatch[2] || priceMatch[3] || priceMatch[4]);
+    const affordable = products.filter(p => p.price <= maxPrice && p.stock > 0).sort((a, b) => b.rating - a.rating);
+    if (affordable.length > 0) {
+      const top = affordable.slice(0, 3).map(p => `**${p.name}** (₹${p.price})`).join(', ');
+      return bn ? `₹${maxPrice}-এর মধ্যে আমাদের সেরা পণ্য: ${top}! 🎁` : `Great options under ₹${maxPrice}: ${top}! 🎁`;
+    }
+    return bn ? `দুঃখিত, এই বাজেটে কোন পণ্য নেই।` : `Sorry, we don't have products in that budget range. Our most affordable option is the Rainbow Stacker at ₹1,199! 🌈`;
+  }
+
+  // Category-based matching
+  const categoryKeywords: Record<string, string[]> = {
+    'Educational': ['educational', 'learning', 'study', 'teach', 'school', 'brain', 'puzzle', 'build', 'castle', 'stack'],
+    'Plushies': ['plush', 'stuffed', 'soft', 'teddy', 'bear', 'elephant', 'cuddly', 'hug', 'cute'],
+    'Robots': ['robot', 'tech', 'electronic', 'galactic', 'mech', 'ai', 'smart', 'future'],
+    'Outdoor Fun': ['outdoor', 'car', 'race', 'rc', 'remote', 'train', 'vehicle', 'speed', 'racer'],
+    'Arts & Crafts': ['art', 'craft', 'draw', 'paint', 'color', 'creative', 'design', 'sketch'],
+    'Gifts': ['gift', 'present', 'birthday', 'surprise', 'party', 'occasion', 'special'],
+  };
+
+  let matchedCategory: string | null = null;
+  let maxMatches = 0;
+  for (const [cat, keywords] of Object.entries(categoryKeywords)) {
+    const matches = keywords.filter(k => input.includes(k)).length;
+    if (matches > maxMatches) { maxMatches = matches; matchedCategory = cat; }
+  }
+
+  if (matchedCategory) {
+    const catProducts = products.filter(p => p.category === matchedCategory && p.stock > 0)
+      .sort((a, b) => (b.rating * b.reviews) - (a.rating * a.reviews));
+    if (catProducts.length > 0) {
+      const top = catProducts.slice(0, 3).map(p => `**${p.name}** (₹${p.price}, ${p.rating}★)`).join(', ');
+      return bn
+        ? `${matchedCategory} বিভাগে আমাদের সেরা পণ্য: ${top}! কোনটি পছন্দ হলো? 🎉`
+        : `Great picks from ${matchedCategory}: ${top}! Want to know more about any of these? 🎉`;
+    }
+  }
+
+  // Age-based queries
+  if (input.match(/\b(baby|infant|toddler|1\s*year|2\s*year|0-2)\b/)) {
+    return bn ? `ছোট বাচ্চাদের জন্য: **Rainbow Stacker** (₹1,199) এবং **Cuddly Elephant** (₹1,699) অসাধারণ! নিরাপদ এবং রঙিন। 🧸` : `For little ones, I'd recommend **Rainbow Stacker** (₹1,199) and **Cuddly Elephant** (₹1,699) — safe, colorful, and perfect for tiny hands! 🧸`;
+  }
+  if (input.match(/\b(3|4|5|6|preschool|kindergarten)\b.*\b(year|বছর)\b/) || input.match(/\b(year|বছর)\b.*\b(3|4|5|6)\b/)) {
+    return bn ? `৩-৬ বছরের বাচ্চাদের জন্য: **Castle Builder Set** (₹7,999), **Mega Art Kit** (₹2,999), **Surprise Gift Box** (₹1,699)! 🏰🎨` : `For ages 3-6: **Castle Builder Set** (₹7,999) for problem-solving, **Mega Art Kit** (₹2,999) for creativity, or **Surprise Gift Box** (₹1,699) for delightful surprises! 🏰🎨`;
+  }
+  if (input.match(/\b(7|8|9|10|11|12|kid|older|school\s*age)\b/)) {
+    return bn ? `বড় বাচ্চাদের জন্য: **Super Galactic Robot** (₹3,999), **Speed Racer RC** (₹3,499), **Medieval Castle** (₹3,899)! 🤖🏎️` : `For older kids: **Super Galactic Robot** (₹3,999) with voice commands, **Speed Racer RC** (₹3,499) for thrills, or **Medieval Castle** (₹3,899) for creative play! 🤖🏎️`;
+  }
+
+  // Greetings
+  if (input.match(/\b(hi|hello|hey|howdy)\b/) || input.match(/(নমস্কার|হ্যালো|হাই)/)) {
+    return bn ? `নমস্কার! 👋 আমি গিফটবট। আপনাকে কীভাবে সাহায্য করতে পারি? আমাদের কাছে শিক্ষামূলক খেলনা, প্লাশি, রোবট, আর্ট কিট এবং আরও অনেক কিছু আছে!` : `Hey there! 👋 Welcome to ToyWonder! I can help you find the perfect toy. We have educational toys, plushies, robots, art kits, RC cars, and gift sets. What are you looking for?`;
+  }
+
+  // Thank you / bye
+  if (input.match(/\b(thank|bye|goodbye)\b/) || input.match(/(ধন্যবাদ|বিদায়)/)) {
+    return bn ? `আপনাকে ধন্যবাদ! 🎉 ToyWonder-এ কেনাকাটা করায় খুশি হলাম। আবার আসবেন!` : `You're welcome! 🎉 Happy toy shopping at ToyWonder! Come back anytime!`;
+  }
+
+  // Bestsellers / popular
+  if (input.match(/\b(best|popular|top|recommend|bestseller|trending)\b/)) {
+    const bestSellers = products.filter(p => p.stock > 0).sort((a, b) => (b.rating * b.reviews) - (a.rating * a.reviews)).slice(0, 3);
+    const list = bestSellers.map(p => `**${p.name}** (₹${p.price}, ${p.rating}★)`).join(', ');
+    return bn ? `আমাদের সেরা বিক্রিত পণ্য: ${list}! 🌟` : `Our top sellers right now: ${list}! 🌟 Would you like details on any of these?`;
+  }
+
+  // Shipping / delivery
+  if (input.match(/\b(ship|deliver|order|return|refund)\b/)) {
+    return bn ? `₹2,000-এর উপরে অর্ডারে বিনামূল্যে ডেলিভারি! ৩-৫ কার্যদিবসে পৌঁছে যাবে। ৭ দিনের মধ্যে সহজ রিটার্ন। 📦` : `Free shipping on orders above ₹2,000! Standard delivery takes 3-5 business days. Easy returns within 7 days. You can also order via WhatsApp! 📦`;
+  }
+
+  // Default helpful response
+  const topPicks = products.filter(p => p.stock > 0).sort((a, b) => b.rating - a.rating).slice(0, 3);
+  const list = topPicks.map(p => `**${p.name}** (₹${p.price})`).join(', ');
+  return bn
+    ? `দুঃখিত, আমি ঠিক বুঝতে পারিনি। তবে আমাদের জনপ্রিয় পণ্যগুলো দেখুন: ${list}! আমাকে বয়স, বাজেট বা পছন্দের বিষয় জানান, আমি সেরা পণ্য খুঁজে দেব! 🎁`
+    : `I'd love to help! Here are some popular picks: ${list}. Tell me the recipient's age, interests, or budget and I'll find the perfect match! 🎁`;
+};
+
+// ── Text Generation (GiftBot Chat) ──────────────────────────────────────────
 
 export const generateGiftSuggestions = async (
-  recipient: string,
-  interests: string,
-  priceRange: string,
+  message: string,
+  history: ChatMessage[],
   language: 'en' | 'bn'
 ): Promise<string> => {
+  // If no API key, use smart local fallback
   if (!API_KEY || API_KEY === 'dummy_api_key_replace_me' || !ai) {
-    return language === 'bn'
-      ? `আমি নিশ্চিতভাবে ${recipient}-এর জন্য উপহার খুঁজতে সাহায্য করতে পারি! ${interests}-এর উপর ভিত্তি করে, আমি আমাদের শিক্ষামূলক বা আউটডোর ফান বিভাগটি দেখার পরামর্শ দেব। 🎁`
-      : `I can definitely help you find a gift for ${recipient}! Based on interests in ${interests}, I'd recommend looking at our Educational or Outdoor Fun categories. 🎁`;
+    return localChatFallback(message, language);
   }
 
   try {
-    const prompt = `You are GiftBot, a helpful assistant for a toy shop named ToyWonder. 
-    The user is looking for a gift for: ${recipient}.
-    Interests: ${interests}.
-    Price Range: ${priceRange}.
-    
-    Recommend 2-3 specific toys from typical toy categories.
-    Reply strictly in ${language === 'bn' ? 'Bengali (Bangla)' : 'English'}.
-    Keep the tone cheerful, helpful, and concise (under 100 words). Use emojis.
-    Mention at least one product name from this list if relevant: Speed Racer RC, Castle Builder Set, Cuddly Elephant, Mega Art Kit, Super Galactic Robot.`;
+    // Build conversation contents for Gemini
+    const langInstruction = language === 'bn' ? '\n\nIMPORTANT: Reply strictly in Bengali (Bangla) language.' : '';
+    const contents: Array<{ role: string; parts: Array<{ text: string }> }> = [
+      { role: 'user', parts: [{ text: SYSTEM_PROMPT + langInstruction }] },
+      { role: 'model', parts: [{ text: language === 'bn' ? "নমস্কার! 👋 আমি গিফটবট। আমাকে বলুন কীভাবে সাহায্য করতে পারি!" : "Hi there! 👋 I'm GiftBot, ready to help you find the perfect toy! What can I do for you today?" }] },
+    ];
+
+    // Add conversation history (last 10 exchanges to stay within context limits)
+    const recentHistory = history.slice(-20);
+    for (const msg of recentHistory) {
+      contents.push({
+        role: msg.role === 'user' ? 'user' : 'model',
+        parts: [{ text: msg.text }],
+      });
+    }
+
+    // Add current message
+    contents.push({ role: 'user', parts: [{ text: message }] });
 
     const response = await ai.models.generateContent({
       model: 'gemini-2.0-flash',
-      contents: prompt,
+      contents,
     });
 
-    const text = response.text;
-    return text || (language === 'bn' ? "দুঃখিত, আমি এই মুহূর্তে কোন আইডিয়া পাচ্ছি না। 🎁" : "I'm having a little trouble thinking of ideas right now. 🎁");
-  } catch (error) {
+    const text = response.text?.trim();
+    if (text && text.length > 0) return text;
+
+    // Empty response — use local fallback instead of generic message
+    return localChatFallback(message, language);
+  } catch (error: any) {
     console.error("Gemini API Error:", error);
-    return language === 'bn'
-      ? "আমার সংযোগে সমস্যা হচ্ছে। কিন্তু আমি বাজি ধরে বলতে পারি তারা আমাদের 'নতুন কালেকশন' পছন্দ করবে! 🎨"
-      : "I'm having a little trouble connecting to my brain right now. 🤖 But I bet they'd love something from our 'New Arrivals' section!";
+    // On API error, still try to give a useful response via local fallback
+    return localChatFallback(message, language);
   }
 };
 
@@ -309,57 +458,27 @@ export const generateSearchRecommendations = async (searchQuery: string, languag
 
 export const generateVoiceResponse = async (userInput: string, language: 'en' | 'bn' = 'en'): Promise<string> => {
   if (!API_KEY || API_KEY === 'dummy_api_key_replace_me' || !ai) {
-    // Smart fallback responses based on keywords
-    const input = userInput.toLowerCase();
-    if (input.includes('hello') || input.includes('hi') || input.includes('hey')) {
-      return "Hey there! 👋 Welcome to ToyWonder! I can help you find the perfect toy. What are you looking for today?";
-    } else if (input.includes('educational') || input.includes('learning') || input.includes('study')) {
-      return "Great choice! Our educational toys include the Castle Builder Set (₹7,999) and Rainbow Stacker (₹1,199) - perfect for developing problem-solving skills. Would you like to know more?";
-    } else if (input.includes('plush') || input.includes('stuffed') || input.includes('soft') || input.includes('teddy')) {
-      return "We have wonderful plush toys! The Cuddly Elephant (₹1,699) and Cuddly Brown Bear (₹2,199) are customer favorites. They're super soft and safe for all ages! 🧸";
-    } else if (input.includes('robot') || input.includes('tech') || input.includes('electronic')) {
-      return "Check out our Super Galactic Robot (₹3,999)! It features voice command recognition, LED light shows, and 360° mobility. Perfect for little tech enthusiasts! 🤖";
-    } else if (input.includes('outdoor') || input.includes('car') || input.includes('race') || input.includes('rc')) {
-      return "Our Speed Racer RC (₹3,499) is a bestseller for outdoor fun! Currently 20% off. We also have the Wooden Express Train (₹2,499) for imaginative play. 🏎️";
-    } else if (input.includes('art') || input.includes('craft') || input.includes('draw') || input.includes('paint') || input.includes('color')) {
-      return "The Mega Art Kit (₹2,999) is perfect for creative kids! It includes everything for drawing, painting, and crafting. Rated 4.7 stars! 🎨";
-    } else if (input.includes('gift') || input.includes('present') || input.includes('birthday') || input.includes('surprise')) {
-      return "Our Surprise Gift Box (₹1,699) is a wonderful option! For a more personalized gift, tell me the child's age and interests and I'll recommend the perfect toy! 🎁";
-    } else if (input.includes('cheap') || input.includes('budget') || input.includes('affordable') || input.includes('under')) {
-      return "We have great budget-friendly options! The Rainbow Stacker (₹1,199), Cuddly Elephant (₹1,699), and Surprise Gift Box (₹1,699) are all under ₹2,000! 💰";
-    } else if (input.includes('best') || input.includes('popular') || input.includes('recommend') || input.includes('top')) {
-      return "Our top picks right now: 🌟 Castle Builder Set (4.8★), Super Galactic Robot (4.6★), and Mega Art Kit (4.7★). All are customer favorites! Which category interests you?";
-    } else if (input.includes('price') || input.includes('cost') || input.includes('how much')) {
-      return "Our prices range from ₹1,199 (Rainbow Stacker) to ₹7,999 (Castle Builder Set). Free shipping on orders above ₹2,000! What's your budget?";
-    } else if (input.includes('ship') || input.includes('deliver') || input.includes('order')) {
-      return "We offer free shipping on orders above ₹2,000! Standard delivery takes 3-5 days. You can also order via WhatsApp for a more personal experience. 📦";
-    } else if (input.includes('thank') || input.includes('bye') || input.includes('goodbye')) {
-      return "You're welcome! Happy toy shopping! 🎉 Feel free to come back anytime. Have a wonderful day!";
-    }
-    return "I can help you find the perfect toy! 🎮 We have educational toys, plushies, robots, art kits, RC cars, and gift sets. What age group are you shopping for?";
+    return localChatFallback(userInput, language);
   }
 
   try {
-    const prompt = `You are a friendly voice assistant for ToyWonder, a children's toy shop. 
-    The customer said: "${userInput}"
-    
-    Available products: Speed Racer RC (₹3,499, Outdoor Fun), Castle Builder Set (₹7,999, Educational), 
-    Cuddly Elephant (₹1,699, Plushies), Mega Art Kit (₹2,999, Arts & Crafts), 
-    Super Galactic Robot (₹3,999, Robots), Wooden Express Train (₹2,499, Outdoor Fun),
-    Cuddly Brown Bear (₹2,199, Plushies), Rainbow Stacker (₹1,199, Educational), 
-    Surprise Gift Box (₹1,699, Gifts).
-    
-    Give a helpful, concise response (under 60 words). Be warm and enthusiastic.
-    Recommend specific products when relevant. Reply in ${language === 'bn' ? 'Bengali' : 'English'}.`;
+    const prompt = `${SYSTEM_PROMPT}
+
+The customer said (via voice): "${userInput}"
+
+Give a helpful, concise response (under 60 words). Be warm and enthusiastic.
+Recommend specific products with prices when relevant. Reply in ${language === 'bn' ? 'Bengali' : 'English'}.`;
 
     const response = await ai.models.generateContent({
       model: 'gemini-2.0-flash',
       contents: prompt,
     });
 
-    return response.text || "I'd love to help you find the perfect toy! Could you tell me more about what you're looking for?";
+    const text = response.text?.trim();
+    if (text && text.length > 0) return text;
+    return localChatFallback(userInput, language);
   } catch (error) {
     console.error('Voice response error:', error);
-    return "I'm having a little trouble right now. Try browsing our categories - we have Educational, Plushies, Outdoor Fun, Arts & Crafts, and Robots!";
+    return localChatFallback(userInput, language);
   }
 };

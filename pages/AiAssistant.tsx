@@ -1,7 +1,7 @@
 
 
 import React, { useState, useRef, useEffect } from 'react';
-import { generateGiftSuggestions } from '../services/gemini';
+import { generateGiftSuggestions, ChatMessage } from '../services/gemini';
 import { products } from '../data';
 import { useCart } from '../contexts/CartContext';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -173,10 +173,15 @@ const AiAssistant: React.FC = () => {
         setLoading(true);
 
         try {
-            // Call Gemini Service with current language
-            const botResponse = await generateGiftSuggestions(userMessage, "toys", "any", language);
+            // Build conversation history from previous messages (text-only messages)
+            const chatHistory: ChatMessage[] = messages
+                .filter(m => m.type !== 'products' && m.text)
+                .map(m => ({ role: m.role === 'user' ? 'user' as const : 'model' as const, text: m.text }));
 
-            const { topMatches, related } = findRelevantProducts(botResponse);
+            // Call Gemini Service with history and current language
+            const botResponse = await generateGiftSuggestions(userMessage, chatHistory, language);
+
+            const { topMatches, related } = findRelevantProducts(botResponse + ' ' + userMessage);
 
             // Store last recommended products for carousel updates
             setLastRecommendedProducts(topMatches);
