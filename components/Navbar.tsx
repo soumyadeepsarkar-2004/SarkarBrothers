@@ -345,12 +345,13 @@ const Navbar: React.FC = () => {
               )}
 
               <Link to="/wishlist" className="flex items-center justify-center size-10 rounded-lg hover:bg-[#f5f3f0] dark:hover:bg-[#332e22] transition-colors relative" aria-label="View wishlist">
-                <span className="material-symbols-outlined">favorite</span>
+                <span className="material-symbols-outlined" style={wishlist.length > 0 ? { fontVariationSettings: "'FILL' 1", color: '#ef4444' } : {}}>favorite</span>
                 {wishlist.length > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">{wishlist.length}</span>
+                  <span className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center bg-red-500 text-[10px] font-bold text-white rounded-full">
+                    {wishlist.length > 9 ? '9+' : wishlist.length}
+                  </span>
                 )}
               </Link>
-
               <Link to="/cart" className="flex items-center justify-center size-10 rounded-lg hover:bg-[#f5f3f0] dark:hover:bg-[#332e22] transition-colors relative" aria-label={t('nav.view_cart_aria', { count: totalItems })}>
                 <span className="material-symbols-outlined">shopping_cart</span>
                 {totalItems > 0 && (
@@ -443,8 +444,9 @@ const Navbar: React.FC = () => {
               <Link to="/voice-assistant" onClick={() => setIsMobileMenuOpen(false)} className={`block px-4 py-3 rounded-lg font-medium transition-colors ${location.pathname === '/voice-assistant' ? 'text-primary' : 'hover:bg-[#f5f3f0] dark:hover:bg-[#332e22]'}`}>Voice AI</Link>
               <Link to="/image-generator" onClick={() => setIsMobileMenuOpen(false)} className={`block px-4 py-3 rounded-lg font-medium transition-colors ${location.pathname === '/image-generator' ? 'text-primary' : 'hover:bg-[#f5f3f0] dark:hover:bg-[#332e22]'}`}>Image Generator</Link>
               <Link to="/whatsapp-order" onClick={() => setIsMobileMenuOpen(false)} className="block px-4 py-3 rounded-lg font-medium hover:bg-[#f5f3f0] dark:hover:bg-[#332e22] transition-colors">{t('nav.order_whatsapp')}</Link>
-              <Link to="/wishlist" onClick={() => setIsMobileMenuOpen(false)} className={`block px-4 py-3 rounded-lg font-medium transition-colors ${location.pathname === '/wishlist' ? 'bg-primary/20 text-primary' : 'hover:bg-[#f5f3f0] dark:hover:bg-[#332e22]'}`}>
-                <span className="flex items-center gap-2"><span className="material-symbols-outlined text-[18px]">favorite</span> Wishlist</span>
+              <Link to="/wishlist" onClick={() => setIsMobileMenuOpen(false)} className={`flex items-center gap-2 px-4 py-3 rounded-lg font-medium transition-colors ${location.pathname === '/wishlist' ? 'bg-primary/20 text-primary' : 'hover:bg-[#f5f3f0] dark:hover:bg-[#332e22]'}`}>
+                <span className="material-symbols-outlined text-[20px]" style={wishlist.length > 0 ? { fontVariationSettings: "'FILL' 1", color: '#ef4444' } : {}}>favorite</span>
+                Wishlist {wishlist.length > 0 && <span className="text-xs bg-red-500 text-white px-1.5 py-0.5 rounded-full font-bold">{wishlist.length}</span>}
               </Link>
               {isAuthenticated && (
                 <Link to="/profile" onClick={() => setIsMobileMenuOpen(false)} className={`block px-4 py-3 rounded-lg font-medium transition-colors ${location.pathname === '/profile' ? 'bg-primary/20 text-primary' : 'hover:bg-[#f5f3f0] dark:hover:bg-[#332e22]'}`}>{t('nav.profile')}</Link>

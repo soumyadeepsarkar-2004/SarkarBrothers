@@ -53,13 +53,13 @@ const App: React.FC = () => {
                   <Route path="/" element={<Home />} />
                   <Route path="/shop" element={<Shop />} />
                   <Route path="/product/:id" element={<ProductDetails />} />
-                  <Route path="/wishlist" element={<Wishlist />} />
                   <Route path="/cart" element={<Cart />} />
                   <Route path="/profile" element={<Profile />} />
                   <Route path="/ai-assistant" element={<AiAssistant />} />
                   <Route path="/voice-assistant" element={<VoiceAssistant />} />
                   <Route path="/image-generator" element={<ImageGenerator />} />
                   <Route path="/whatsapp-order" element={<WhatsAppOrder />} />
+                  <Route path="/wishlist" element={<Wishlist />} />
                   <Route path="/admin" element={<Admin />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
