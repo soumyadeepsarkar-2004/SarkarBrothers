@@ -444,7 +444,7 @@ app.post('/api/ai/chat', aiLimiter, async (req, res) => {
       return res.json({ text: response });
     }
 
-    const systemPrompt = 'You are GiftBot for SarkarBrothers\' toy shop. Language: ' + (language === 'bn' ? 'Bengali' : 'English') + '.\n' +
+    const systemPrompt = 'You are GiftBot for SarkarBrothers toy shop. Language: ' + (language === 'bn' ? 'Bengali' : 'English') + '.\n' +
       'Available: Speed Racer RC (₹3,499), Castle Builder Set (₹7,999), Cuddly Elephant (₹1,699), Mega Art Kit (₹2,999), Super Galactic Robot (₹3,999), Wooden Express Train (₹2,499), Cuddly Brown Bear (₹2,199), Rainbow Stacker (₹1,199), Surprise Gift Box (₹1,699).\n' +
       'Recommend specific products. Keep under 80 words. Be cheerful. Use emojis.';
 
@@ -548,7 +548,7 @@ app.post('/api/ai/voice', aiLimiter, async (req, res) => {
       return res.json({ text: response });
     }
 
-    const prompt = 'You are a voice assistant for SarkarBrothers\' toy shop.\nCustomer said: "' + message + '"\nAvailable: Speed Racer RC (₹3,499), Castle Builder Set (₹7,999), Cuddly Elephant (₹1,699), Mega Art Kit (₹2,999), Super Galactic Robot (₹3,999), Wooden Express Train (₹2,499), Cuddly Brown Bear (₹2,199), Rainbow Stacker (₹1,199), Surprise Gift Box (₹1,699).\nReply concisely (under 50 words). Be warm.' + (language === 'bn' ? ' Reply in Bengali.' : '');
+    const prompt = 'You are a voice assistant for SarkarBrothers toy shop.\nCustomer said: "' + message + '"\nAvailable: Speed Racer RC (₹3,499), Castle Builder Set (₹7,999), Cuddly Elephant (₹1,699), Mega Art Kit (₹2,999), Super Galactic Robot (₹3,999), Wooden Express Train (₹2,499), Cuddly Brown Bear (₹2,199), Rainbow Stacker (₹1,199), Surprise Gift Box (₹1,699).\nReply concisely (under 50 words). Be warm.' + (language === 'bn' ? ' Reply in Bengali.' : '');
     const result = await ai.models.generateContent({ model: 'gemini-2.0-flash', contents: prompt });
     res.json({ text: result.text || "I'd love to help! What are you looking for? 🎁" });
   } catch (err) {
@@ -597,7 +597,7 @@ process.on('SIGINT', () => shutdown('SIGINT'));
 
 // ─── Start Server ──────────────────────────────────────────────
 app.listen(PORT, () => {
-  console.log('\nSarkarBrothers\' API Server');
+  console.log('\nSarkarBrothers API Server');
   console.log('  Environment: ' + NODE_ENV);
   console.log('  Port: ' + PORT);
   console.log('  MongoDB: ' + (dbConnected ? 'connected' : 'mock data mode'));

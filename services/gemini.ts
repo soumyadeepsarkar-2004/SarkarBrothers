@@ -31,7 +31,7 @@ const buildProductCatalog = (): string => {
 
 const PRODUCT_CATALOG = buildProductCatalog();
 
-const SYSTEM_PROMPT = `You are GiftBot, the friendly AI shopping assistant for SarkarBrothers' — a cheerful, colorful children's toy shop.
+const SYSTEM_PROMPT = `You are GiftBot, the friendly AI shopping assistant for SarkarBrothers — a cheerful, colorful children's toy shop.
 
 YOUR ROLE:
 - Help customers find the perfect toy or gift
@@ -125,12 +125,12 @@ const localChatFallback = (message: string, language: 'en' | 'bn'): string => {
 
   // Greetings
   if (input.match(/\b(hi|hello|hey|howdy)\b/) || input.match(/(নমস্কার|হ্যালো|হাই)/)) {
-    return bn ? `নমস্কার! 👋 আমি গিফটবট। আপনাকে কীভাবে সাহায্য করতে পারি? আমাদের কাছে শিক্ষামূলক খেলনা, প্লাশি, রোবট, আর্ট কিট এবং আরও অনেক কিছু আছে!` : `Hey there! 👋 Welcome to SarkarBrothers'! I can help you find the perfect toy. We have educational toys, plushies, robots, art kits, RC cars, and gift sets. What are you looking for?`;
+    return bn ? `নমস্কার! 👋 আমি গিফটবট। আপনাকে কীভাবে সাহায্য করতে পারি? আমাদের কাছে শিক্ষামূলক খেলনা, প্লাশি, রোবট, আর্ট কিট এবং আরও অনেক কিছু আছে!` : `Hey there! 👋 Welcome to SarkarBrothers! I can help you find the perfect toy. We have educational toys, plushies, robots, art kits, RC cars, and gift sets. What are you looking for?`;
   }
 
   // Thank you / bye
   if (input.match(/\b(thank|bye|goodbye)\b/) || input.match(/(ধন্যবাদ|বিদায়)/)) {
-    return bn ? `আপনাকে ধন্যবাদ! 🎉 SarkarBrothers'-এ কেনাকাটা করায় খুশি হলাম। আবার আসবেন!` : `You're welcome! 🎉 Happy toy shopping at SarkarBrothers'! Come back anytime!`;
+    return bn ? `আপনাকে ধন্যবাদ! 🎉 SarkarBrothers-এ কেনাকাটা করায় খুশি হলাম। আবার আসবেন!` : `You're welcome! 🎉 Happy toy shopping at SarkarBrothers! Come back anytime!`;
   }
 
   // Bestsellers / popular

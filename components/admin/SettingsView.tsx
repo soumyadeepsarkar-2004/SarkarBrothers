@@ -7,7 +7,7 @@ interface SettingsViewProps {
 
 const SettingsView: React.FC<SettingsViewProps> = ({ showToast }) => {
     const [storeInfo, setStoreInfo] = useState({
-        name: "SarkarBrothers'",
+        name: "SarkarBrothers",
         email: 'contact@sarkarbrothers.com',
         phone: '+91 98765 43210',
         address: '123 Fun Lane, Joyville',

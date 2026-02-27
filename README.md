@@ -1,7 +1,7 @@
 <div align="center">
 </div>
 
-# 🎁 SarkarBrothers' - Unwrap the Magic of Play
+# 🎁 SarkarBrothers - Unwrap the Magic of Play
 
 A modern, AI-powered e-commerce platform for toys and gifts built with React, TypeScript, and Google Gemini AI.
 
@@ -71,7 +71,7 @@ A modern, AI-powered e-commerce platform for toys and gifts built with React, Ty
 ## 📁 Project Structure
 
 ```
-SarkarBrothers'/
+SarkarBrothers/
 ├── components/          # Reusable React components
 │   ├── Navbar.tsx
 │   ├── LoginModal.tsx

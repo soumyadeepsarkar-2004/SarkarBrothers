@@ -14,7 +14,7 @@ const Footer: React.FC = () => {
           <div className="space-y-4">
             <Link to="/" className="flex items-center gap-2">
               <span className="material-symbols-outlined text-primary text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>toys</span>
-              <span className="text-white text-xl font-bold tracking-tight">SarkarBrothers'</span>
+              <span className="text-white text-xl font-bold tracking-tight">SarkarBrothers</span>
             </Link>
             <p className="text-sm leading-relaxed">
               Curated toys that spark imagination, encourage learning, and create lasting memories for children of all ages.
@@ -76,7 +76,7 @@ const Footer: React.FC = () => {
         </div>
 
         <div className="mt-10 pt-6 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-xs">&copy; {new Date().getFullYear()} SarkarBrothers'. All rights reserved.</p>
+          <p className="text-xs">&copy; {new Date().getFullYear()} SarkarBrothers. All rights reserved.</p>
           <div className="flex items-center gap-2 text-xs">
             <span className="material-symbols-outlined text-green-500 text-sm">verified_user</span>
             Secure Shopping &bull; 100% Authentic Toys
