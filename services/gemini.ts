@@ -482,3 +482,97 @@ Recommend specific products with prices when relevant. Reply in ${language === '
     return localChatFallback(userInput, language);
   }
 };
+
+// ── Gemini Live API Voice Response ───────────────────────────────────────────
+
+const LIVE_MODEL_ID = 'gemini-live-2.5-flash-preview';
+
+export const generateVoiceResponseLive = async (userInput: string, language: 'en' | 'bn' = 'en'): Promise<string> => {
+  if (!API_KEY || API_KEY === 'dummy_api_key_replace_me' || !ai) {
+    return localChatFallback(userInput, language);
+  }
+
+  return new Promise<string>(async (resolve, reject) => {
+    let session: any = null;
+    let resolved = false;
+    let aggregatedText = '';
+
+    const cleanup = () => {
+      try {
+        session?.close?.();
+      } catch {
+      }
+    };
+
+    const finalize = (text?: string) => {
+      if (resolved) return;
+      resolved = true;
+      cleanup();
+      const finalText = text?.trim();
+      if (finalText) {
+        resolve(finalText);
+      } else {
+        resolve(localChatFallback(userInput, language));
+      }
+    };
+
+    const fail = (err: unknown) => {
+      if (resolved) return;
+      resolved = true;
+      cleanup();
+      reject(err);
+    };
+
+    const timeoutId = setTimeout(() => {
+      finalize(aggregatedText);
+    }, 18000);
+
+    try {
+      session = await (ai as any).live.connect({
+        model: LIVE_MODEL_ID,
+        config: {
+          responseModalities: ['TEXT'],
+        },
+        callbacks: {
+          onmessage: (event: any) => {
+            if (resolved) return;
+            if (event?.text) {
+              aggregatedText += event.text;
+            }
+            if (event?.serverContent?.turnComplete) {
+              clearTimeout(timeoutId);
+              finalize(aggregatedText);
+            }
+          },
+          onerror: (event: any) => {
+            clearTimeout(timeoutId);
+            fail(event?.error || new Error('Gemini Live connection error'));
+          },
+          onclose: () => {
+            clearTimeout(timeoutId);
+            if (!resolved) {
+              finalize(aggregatedText);
+            }
+          },
+        },
+      });
+
+      const langInstruction = language === 'bn'
+        ? 'Reply strictly in Bengali language.'
+        : 'Reply strictly in English language.';
+
+      session.sendClientContent({
+        turns: [{
+          role: 'user',
+          parts: [{
+            text: `${SYSTEM_PROMPT}\n\n${langInstruction}\nCustomer said (voice): "${userInput}"\nKeep response concise (under 60 words) and include specific product suggestions with prices when relevant.`,
+          }],
+        }],
+        turnComplete: true,
+      });
+    } catch (error) {
+      clearTimeout(timeoutId);
+      fail(error);
+    }
+  });
+};

@@ -133,8 +133,8 @@ const ProductDetails: React.FC = () => {
                   <button
                     onClick={handleAddToCart}
                     className={`flex-1 flex items-center justify-center gap-2 rounded-xl px-8 py-4 text-base font-bold shadow-sm transition-all ${added
-                        ? 'bg-green-500 text-white'
-                        : 'bg-primary text-background-dark hover:bg-primary/90 hover:shadow-md'
+                      ? 'bg-green-500 text-white'
+                      : 'bg-primary text-background-dark hover:bg-primary/90 hover:shadow-md'
                       }`}
                   >
                     <span className="material-symbols-outlined">{added ? 'check' : 'shopping_bag'}</span>
@@ -143,8 +143,8 @@ const ProductDetails: React.FC = () => {
                   <button
                     onClick={() => toggleWishlist(product.id)}
                     className={`px-4 rounded-xl border-2 transition-colors flex items-center justify-center ${isInWishlist(product.id)
-                        ? 'border-red-500 bg-red-50 text-red-500'
-                        : 'border-[#e6e0d4] dark:border-[#444] text-[#8a8060] hover:border-red-500 hover:text-red-500'
+                      ? 'border-red-500 bg-red-50 text-red-500'
+                      : 'border-[#e6e0d4] dark:border-[#444] text-[#8a8060] hover:border-red-500 hover:text-red-500'
                       }`}
                   >
                     <span className={`material-symbols-outlined ${isInWishlist(product.id) ? 'fill-current' : ''}`} style={isInWishlist(product.id) ? { fontVariationSettings: "'FILL' 1" } : {}}>favorite</span>
@@ -228,6 +228,36 @@ const ProductDetails: React.FC = () => {
           <button className="w-full mt-6 py-3 border border-[#e6e3db] dark:border-[#332f20] rounded-xl text-sm font-bold text-[#181611] dark:text-white hover:bg-[#f5f3f0] dark:hover:bg-[#332f20] transition-colors">
             Load More Reviews
           </button>
+
+          <div className="mt-8 border-t border-[#e6e3db] dark:border-[#332f20] pt-6">
+            <h4 className="text-base font-bold text-[#181611] dark:text-white mb-3">Add Your Review (Coming Soon)</h4>
+            <div className="space-y-3">
+              <input
+                type="text"
+                disabled
+                placeholder="Your name"
+                className="w-full rounded-xl border border-[#e6e3db] dark:border-[#332f20] bg-[#f8f7f4] dark:bg-[#28231a] px-4 py-3 text-sm text-[#8a8060]"
+              />
+              <select
+                disabled
+                className="w-full rounded-xl border border-[#e6e3db] dark:border-[#332f20] bg-[#f8f7f4] dark:bg-[#28231a] px-4 py-3 text-sm text-[#8a8060]"
+              >
+                <option>Rating</option>
+              </select>
+              <textarea
+                disabled
+                rows={3}
+                placeholder="Write your review"
+                className="w-full rounded-xl border border-[#e6e3db] dark:border-[#332f20] bg-[#f8f7f4] dark:bg-[#28231a] px-4 py-3 text-sm text-[#8a8060] resize-none"
+              />
+              <button
+                disabled
+                className="w-full rounded-xl bg-gray-300 dark:bg-gray-700 py-3 text-sm font-bold text-gray-500 cursor-not-allowed"
+              >
+                Submit Review (Coming Soon)
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

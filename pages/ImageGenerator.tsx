@@ -4,6 +4,12 @@ import { generateImageWithPrompt, editImageWithPrompt } from '../services/gemini
 type TabMode = 'generate' | 'edit';
 type ImageSize = '1024x1024' | '2048x2048' | '4096x4096';
 
+const IMAGE_SIZE_OPTIONS: { value: ImageSize; label: string }[] = [
+    { value: '1024x1024', label: '1K' },
+    { value: '2048x2048', label: '2K' },
+    { value: '4096x4096', label: '4K' },
+];
+
 const ImageGenerator: React.FC = () => {
     const [activeTab, setActiveTab] = useState<TabMode>('generate');
     const [prompt, setPrompt] = useState('');
@@ -232,16 +238,16 @@ const ImageGenerator: React.FC = () => {
                                         Image Size
                                     </label>
                                     <div className="grid grid-cols-3 gap-2">
-                                        {(['1024x1024', '2048x2048', '4096x4096'] as ImageSize[]).map(size => (
+                                        {IMAGE_SIZE_OPTIONS.map(({ value, label }) => (
                                             <button
-                                                key={size}
-                                                onClick={() => setImageSize(size)}
-                                                className={`py-2 px-4 rounded-lg font-medium transition-all ${imageSize === size
+                                                key={value}
+                                                onClick={() => setImageSize(value)}
+                                                className={`py-2 px-4 rounded-lg font-medium transition-all ${imageSize === value
                                                     ? 'bg-purple-500 text-white shadow-md'
                                                     : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                                                     }`}
                                             >
-                                                {size.split('x')[0]}
+                                                {label}
                                             </button>
                                         ))}
                                     </div>

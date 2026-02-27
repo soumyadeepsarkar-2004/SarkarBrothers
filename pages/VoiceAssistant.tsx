@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { generateVoiceResponse } from '../services/gemini';
+import { generateVoiceResponse, generateVoiceResponseLive } from '../services/gemini';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useCart } from '../contexts/CartContext';
 import { products } from '../data';
@@ -171,9 +171,17 @@ const VoiceAssistant: React.FC = () => {
         };
         setMessages(prev => [...prev, userMessage]);
         setIsLoading(true);
+        setError(null);
 
         try {
-            const response = await generateVoiceResponse(text, language);
+            let response = '';
+            try {
+                response = await generateVoiceResponseLive(text, language);
+            } catch (liveError) {
+                console.warn('Gemini Live unavailable, using standard response:', liveError);
+                setError('Live voice connection is unstable right now. Using fallback response mode.');
+                response = await generateVoiceResponse(text, language);
+            }
             // Find relevant products based on both user query and AI response
             const matchedProducts = findRelevantProducts(`${text} ${response}`);
 
