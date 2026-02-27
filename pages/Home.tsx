@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { products } from '../data';
 import { useCart } from '../contexts/CartContext';
+import { useWishlist } from '../contexts/WishlistContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { formatPrice } from '../utils/formatters';
 
@@ -62,6 +63,7 @@ const VideoModal: React.FC<{ isOpen: boolean; onClose: () => void; videoUrl: str
 const Home: React.FC = () => {
   const trendingProducts = products.slice(0, 4);
   const { addToCart } = useCart();
+  const { toggleWishlist, isInWishlist } = useWishlist();
   const { t } = useLanguage();
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
 
@@ -130,8 +132,11 @@ const Home: React.FC = () => {
               <div key={product.id} className="min-w-[260px] md:min-w-[280px] bg-white dark:bg-[#2a261a] rounded-xl shadow-sm hover:shadow-md transition-all snap-start flex flex-col group border border-gray-100 dark:border-gray-800">
                 <Link to={`/product/${product.id}`} className="relative aspect-square p-4 block">
                   <div className="w-full h-full bg-center bg-contain bg-no-repeat rounded-lg" style={{ backgroundImage: `url("${product.image}")` }}></div>
-                  <button className="absolute top-3 right-3 p-2 bg-white/80 dark:bg-black/50 rounded-full hover:bg-white dark:hover:bg-black transition-colors text-gray-400 hover:text-red-500">
-                    <span className="material-symbols-outlined text-xl">favorite</span>
+                  <button
+                    onClick={(e) => { e.preventDefault(); toggleWishlist(product.id); }}
+                    className={`absolute top-3 right-3 p-2 rounded-full transition-colors z-10 ${isInWishlist(product.id) ? 'bg-red-50 text-red-500' : 'bg-white/80 dark:bg-black/50 text-gray-400 hover:text-red-500'}`}
+                  >
+                    <span className={`material-symbols-outlined text-xl ${isInWishlist(product.id) ? 'fill-current' : ''}`} style={isInWishlist(product.id) ? { fontVariationSettings: "'FILL' 1" } : {}}>favorite</span>
                   </button>
                   {product.badge && (
                     <span className="absolute top-3 left-3 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">{product.badge}</span>

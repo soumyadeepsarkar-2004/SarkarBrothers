@@ -2,6 +2,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useCart } from '../contexts/CartContext';
+import { useWishlist } from '../contexts/WishlistContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext'; // Relative import
 import { api } from '../services/api';
@@ -13,6 +14,7 @@ const Navbar: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { totalItems, addToCart, items: cartItems } = useCart();
+  const { wishlist } = useWishlist();
   const { language, setLanguage, t } = useLanguage();
   const { isAuthenticated, user, role } = useAuth(); // Use AuthContext
 
@@ -188,10 +190,10 @@ const Navbar: React.FC = () => {
                       <button
                         onClick={(e) => handleAddToCart(e, product)}
                         className={`relative size-9 rounded-lg transition-all flex items-center justify-center shrink-0 ${isAdding
-                            ? 'bg-green-500 text-white'
-                            : cartQty > 0
-                              ? 'bg-primary text-black'
-                              : 'bg-primary/10 hover:bg-primary text-primary hover:text-black'
+                          ? 'bg-green-500 text-white'
+                          : cartQty > 0
+                            ? 'bg-primary text-black'
+                            : 'bg-primary/10 hover:bg-primary text-primary hover:text-black'
                           }`}
                         aria-label={isAdding ? t('product.added_to_cart_aria') : t('product.add_to_cart_aria')}
                         title={cartQty > 0 ? `In cart: ${cartQty}` : 'Add to cart'}
@@ -342,6 +344,13 @@ const Navbar: React.FC = () => {
                 </button>
               )}
 
+              <Link to="/wishlist" className="flex items-center justify-center size-10 rounded-lg hover:bg-[#f5f3f0] dark:hover:bg-[#332e22] transition-colors relative" aria-label="View wishlist">
+                <span className="material-symbols-outlined">favorite</span>
+                {wishlist.length > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">{wishlist.length}</span>
+                )}
+              </Link>
+
               <Link to="/cart" className="flex items-center justify-center size-10 rounded-lg hover:bg-[#f5f3f0] dark:hover:bg-[#332e22] transition-colors relative" aria-label={t('nav.view_cart_aria', { count: totalItems })}>
                 <span className="material-symbols-outlined">shopping_cart</span>
                 {totalItems > 0 && (
@@ -434,6 +443,9 @@ const Navbar: React.FC = () => {
               <Link to="/voice-assistant" onClick={() => setIsMobileMenuOpen(false)} className={`block px-4 py-3 rounded-lg font-medium transition-colors ${location.pathname === '/voice-assistant' ? 'text-primary' : 'hover:bg-[#f5f3f0] dark:hover:bg-[#332e22]'}`}>Voice AI</Link>
               <Link to="/image-generator" onClick={() => setIsMobileMenuOpen(false)} className={`block px-4 py-3 rounded-lg font-medium transition-colors ${location.pathname === '/image-generator' ? 'text-primary' : 'hover:bg-[#f5f3f0] dark:hover:bg-[#332e22]'}`}>Image Generator</Link>
               <Link to="/whatsapp-order" onClick={() => setIsMobileMenuOpen(false)} className="block px-4 py-3 rounded-lg font-medium hover:bg-[#f5f3f0] dark:hover:bg-[#332e22] transition-colors">{t('nav.order_whatsapp')}</Link>
+              <Link to="/wishlist" onClick={() => setIsMobileMenuOpen(false)} className={`block px-4 py-3 rounded-lg font-medium transition-colors ${location.pathname === '/wishlist' ? 'bg-primary/20 text-primary' : 'hover:bg-[#f5f3f0] dark:hover:bg-[#332e22]'}`}>
+                <span className="flex items-center gap-2"><span className="material-symbols-outlined text-[18px]">favorite</span> Wishlist</span>
+              </Link>
               {isAuthenticated && (
                 <Link to="/profile" onClick={() => setIsMobileMenuOpen(false)} className={`block px-4 py-3 rounded-lg font-medium transition-colors ${location.pathname === '/profile' ? 'bg-primary/20 text-primary' : 'hover:bg-[#f5f3f0] dark:hover:bg-[#332e22]'}`}>{t('nav.profile')}</Link>
               )}

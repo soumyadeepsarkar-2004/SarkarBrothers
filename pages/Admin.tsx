@@ -36,8 +36,8 @@ const Admin: React.FC = () => {
   };
 
   const handleLogout = () => {
-      logout(); // Use AuthContext logout
-      navigate('/');
+    logout(); // Use AuthContext logout
+    navigate('/');
   };
 
   const handleSaveProduct = useCallback((productData: Product) => {
@@ -53,14 +53,14 @@ const Admin: React.FC = () => {
 
   const handleDeleteProduct = useCallback((id: string) => {
     if (window.confirm("Are you sure you want to delete this product? This action cannot be undone.")) {
-        setProducts(prev => prev.filter(p => p.id !== id));
-        showToast('Product deleted.');
+      setProducts(prev => prev.filter(p => p.id !== id));
+      showToast('Product deleted.');
     }
   }, []);
-  
+
   const handleOrderStatusChange = useCallback((orderId: string, newStatus: Order['status']) => {
-      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
-      showToast(`Order ${orderId} status updated.`);
+    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
+    showToast(`Order ${orderId} status updated.`);
   }, []);
 
   // Show a loading indicator while auth is being checked
@@ -94,17 +94,17 @@ const Admin: React.FC = () => {
           <button key={tab} onClick={() => { setActiveTab(tab); setSidebarOpen(false); }}
             className={`w-full flex items-center px-4 py-2.5 text-sm font-medium rounded-lg transition-colors ${activeTab === tab ? 'bg-primary/20 text-primary' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}>
             <span className="material-symbols-outlined mr-3">{
-                {dashboard: 'dashboard', products: 'inventory_2', orders: 'receipt_long', settings: 'settings'}[tab]
+              { dashboard: 'dashboard', products: 'inventory_2', orders: 'receipt_long', settings: 'settings' }[tab]
             }</span>
             {tab.charAt(0).toUpperCase() + tab.slice(1)}
           </button>
         ))}
       </nav>
       <div className="p-4 border-t dark:border-gray-700 shrink-0">
-           <button onClick={handleLogout} className="w-full flex items-center px-4 py-2 text-sm font-medium rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
-              <span className="material-symbols-outlined mr-3">logout</span>
-              Logout
-          </button>
+        <button onClick={handleLogout} className="w-full flex items-center px-4 py-2 text-sm font-medium rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+          <span className="material-symbols-outlined mr-3">logout</span>
+          Logout
+        </button>
       </div>
     </div>
   );
@@ -129,13 +129,13 @@ const Admin: React.FC = () => {
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0">
         <header className="h-16 bg-white dark:bg-gray-800 shadow-sm shrink-0 flex items-center justify-between px-6 lg:justify-end">
-            <button className="lg:hidden text-gray-600 dark:text-gray-300" onClick={() => setSidebarOpen(true)}>
-                <span className="material-symbols-outlined">menu</span>
-            </button>
-            <div className="flex items-center gap-4">
-                <span className="font-semibold text-sm">{user?.name || 'Admin'}</span>
-                <img className="w-8 h-8 rounded-full" src={user?.avatar || "https://api.dicebear.com/8.x/initials/svg?seed=Admin&backgroundColor=f4c025,8a8060&backgroundType=solid,gradientLinear&radius=50"} alt="Admin"/>
-            </div>
+          <button className="lg:hidden text-gray-600 dark:text-gray-300" onClick={() => setSidebarOpen(true)}>
+            <span className="material-symbols-outlined">menu</span>
+          </button>
+          <div className="flex items-center gap-4">
+            <span className="font-semibold text-sm">{user?.name || 'Admin'}</span>
+            <img className="w-8 h-8 rounded-full" src={user?.avatar || "https://api.dicebear.com/8.x/initials/svg?seed=Admin&backgroundColor=f4c025,8a8060&backgroundType=solid,gradientLinear&radius=50"} alt="Admin" />
+          </div>
         </header>
         <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
           {renderContent()}
@@ -144,9 +144,9 @@ const Admin: React.FC = () => {
 
       {/* Toast Notification */}
       {toast.show && (
-          <div className="fixed bottom-6 right-6 bg-gray-900 text-white px-5 py-3 rounded-lg shadow-lg z-50 animate-[fadeIn_0.3s_ease-out]">
-              {toast.message}
-          </div>
+        <div className="fixed bottom-6 right-6 bg-gray-900 text-white px-5 py-3 rounded-lg shadow-lg z-50 animate-[fadeIn_0.3s_ease-out]">
+          {toast.message}
+        </div>
       )}
     </div>
   );

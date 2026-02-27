@@ -159,8 +159,8 @@ const ImageGenerator: React.FC = () => {
                     <button
                         onClick={() => { setActiveTab('generate'); resetForm(); }}
                         className={`flex-1 py-3 px-6 rounded-lg font-semibold transition-all ${activeTab === 'generate'
-                                ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-md'
-                                : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                            ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-md'
+                            : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                             }`}
                     >
                         <span className="material-symbols-outlined text-lg mr-2 align-middle">auto_awesome</span>
@@ -169,8 +169,8 @@ const ImageGenerator: React.FC = () => {
                     <button
                         onClick={() => { setActiveTab('edit'); resetForm(); }}
                         className={`flex-1 py-3 px-6 rounded-lg font-semibold transition-all ${activeTab === 'edit'
-                                ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-md'
-                                : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                            ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-md'
+                            : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                             }`}
                     >
                         <span className="material-symbols-outlined text-lg mr-2 align-middle">edit</span>
@@ -237,8 +237,8 @@ const ImageGenerator: React.FC = () => {
                                                 key={size}
                                                 onClick={() => setImageSize(size)}
                                                 className={`py-2 px-4 rounded-lg font-medium transition-all ${imageSize === size
-                                                        ? 'bg-purple-500 text-white shadow-md'
-                                                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                                                    ? 'bg-purple-500 text-white shadow-md'
+                                                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                                                     }`}
                                             >
                                                 {size.split('x')[0]}

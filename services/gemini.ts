@@ -20,9 +20,9 @@ try {
 const buildProductCatalog = (): string => {
   return products.map(p => {
     const parts = [`${p.name} (₹${p.price}${p.originalPrice ? `, was ₹${p.originalPrice}` : ''})`,
-      `Category: ${p.category}`,
-      `Rating: ${p.rating}★ (${p.reviews} reviews)`,
-      `Stock: ${p.stock > 0 ? `${p.stock} available` : 'Out of stock'}`];
+    `Category: ${p.category}`,
+    `Rating: ${p.rating}★ (${p.reviews} reviews)`,
+    `Stock: ${p.stock > 0 ? `${p.stock} available` : 'Out of stock'}`];
     if (p.badge) parts.push(`Badge: ${p.badge}`);
     if (p.description) parts.push(`Description: ${p.description}`);
     return parts.join(' | ');

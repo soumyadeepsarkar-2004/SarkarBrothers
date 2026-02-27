@@ -12,7 +12,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ showToast }) => {
         phone: '+91 98765 43210',
         address: '123 Fun Lane, Joyville',
     });
-    
+
     const [isDarkMode, setIsDarkMode] = useState(() => localStorage.getItem('adminTheme') === 'dark');
 
     useEffect(() => {
@@ -29,7 +29,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ showToast }) => {
     const handleInfoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setStoreInfo({ ...storeInfo, [e.target.name]: e.target.value });
     };
-    
+
     const handleInfoSave = (e: React.FormEvent) => {
         e.preventDefault();
         showToast('Store information updated!');
@@ -52,7 +52,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ showToast }) => {
                     </div>
                 </form>
             </div>
-            
+
             {/* Appearance */}
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-200 dark:border-gray-700">
                 <h2 className="text-lg font-bold mb-4">Appearance</h2>

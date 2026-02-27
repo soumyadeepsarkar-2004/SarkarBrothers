@@ -15,6 +15,7 @@ import VoiceAssistant from './pages/VoiceAssistant';
 import ImageGenerator from './pages/ImageGenerator';
 import WhatsAppOrder from './pages/WhatsAppOrder';
 import Admin from './pages/Admin';
+import Wishlist from './pages/Wishlist';
 import NotFound from './pages/NotFound';
 import { CartProvider } from './contexts/CartContext';
 import { WishlistProvider } from './contexts/WishlistContext';
@@ -52,6 +53,7 @@ const App: React.FC = () => {
                   <Route path="/" element={<Home />} />
                   <Route path="/shop" element={<Shop />} />
                   <Route path="/product/:id" element={<ProductDetails />} />
+                  <Route path="/wishlist" element={<Wishlist />} />
                   <Route path="/cart" element={<Cart />} />
                   <Route path="/profile" element={<Profile />} />
                   <Route path="/ai-assistant" element={<AiAssistant />} />
