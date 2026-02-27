@@ -31,8 +31,8 @@ A modern, AI-powered e-commerce platform for toys and gifts built with React, Ty
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/soumyadeepsarkar-2004/ToyWonder.git
-   cd ToyWonder
+   git clone https://github.com/soumyadeepsarkar-2004/SarkarBrothers.git
+   cd SarkarBrothers
    ```
 
 2. **Install dependencies**
