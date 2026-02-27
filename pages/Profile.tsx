@@ -436,8 +436,8 @@ const Profile: React.FC = () => {
                                         type="button"
                                         onClick={() => setAddressForm({ ...addressForm, name: type })}
                                         className={`px-3 py-1 rounded-full text-xs font-bold border transition-colors ${addressForm.name === type
-                                                ? 'bg-primary border-primary text-[#181611]'
-                                                : 'border-[#e6e3db] dark:border-[#332f20] text-[#8a8060] hover:border-primary'
+                                            ? 'bg-primary border-primary text-[#181611]'
+                                            : 'border-[#e6e3db] dark:border-[#332f20] text-[#8a8060] hover:border-primary'
                                             }`}
                                     >
                                         {type}
@@ -585,8 +585,8 @@ const Profile: React.FC = () => {
                                 key={tab}
                                 onClick={() => setActiveTab(tab)}
                                 className={`w-full flex items-center px-4 py-3 rounded-xl font-medium transition-colors ${activeTab === tab
-                                        ? 'bg-primary/20 text-primary'
-                                        : 'text-[#8a8060] hover:bg-[#f5f3f0] dark:hover:bg-[#2a261a]'
+                                    ? 'bg-primary/20 text-primary'
+                                    : 'text-[#8a8060] hover:bg-[#f5f3f0] dark:hover:bg-[#2a261a]'
                                     }`}
                             >
                                 <span className="material-symbols-outlined mr-3 text-lg">{
@@ -785,8 +785,8 @@ const Profile: React.FC = () => {
                                                         <p className="text-sm text-[#8a8060]">{order.date} • {order.items.length} items</p>
                                                     </div>
                                                     <span className={`px-3 py-1 rounded-full text-xs font-bold ${order.status === 'Processing' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
-                                                            order.status === 'Shipped' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
-                                                                'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
+                                                        order.status === 'Shipped' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+                                                            'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
                                                         }`}>
                                                         {order.status}
                                                     </span>
@@ -829,7 +829,7 @@ const Profile: React.FC = () => {
                                                         <p className="text-sm text-[#8a8060]">{order.date} • {order.items.length} items</p>
                                                     </div>
                                                     <span className={`px-3 py-1 rounded-full text-xs font-bold ${order.status === 'Delivered' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
-                                                            'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
+                                                        'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
                                                         }`}>
                                                         {order.status}
                                                     </span>
