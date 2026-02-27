@@ -87,7 +87,7 @@ const Admin: React.FC = () => {
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-center h-20 border-b dark:border-gray-700 shrink-0">
         <span className="material-symbols-outlined text-primary text-3xl">toys</span>
-        <h1 className="text-xl font-bold ml-2 text-gray-800 dark:text-white">ToyWonder</h1>
+        <h1 className="text-xl font-bold ml-2 text-gray-800 dark:text-white">SarkarBrothers'</h1>
       </div>
       <nav className="flex-1 px-4 py-4 space-y-2">
         {(['dashboard', 'products', 'orders', 'settings'] as AdminTab[]).map(tab => (

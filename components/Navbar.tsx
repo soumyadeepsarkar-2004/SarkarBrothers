@@ -263,7 +263,7 @@ const Navbar: React.FC = () => {
               <div className="size-8 text-primary">
                 <span className="material-symbols-outlined" style={{ fontSize: '32px', fontVariationSettings: "'FILL' 1" }}>toys</span>
               </div>
-              <h2 className="text-[#181611] dark:text-white text-xl font-bold tracking-tight hidden sm:block">ToyWonder</h2>
+              <h2 className="text-[#181611] dark:text-white text-xl font-bold tracking-tight hidden sm:block">SarkarBrothers'</h2>
             </Link>
 
             {/* Search Bar (Desktop) */}
@@ -418,7 +418,7 @@ const Navbar: React.FC = () => {
                 <div className="size-8 text-primary">
                   <span className="material-symbols-outlined" style={{ fontSize: '32px', fontVariationSettings: "'FILL' 1" }}>toys</span>
                 </div>
-                <h2 className="text-[#181611] dark:text-white text-xl font-bold tracking-tight">ToyWonder</h2>
+                <h2 className="text-[#181611] dark:text-white text-xl font-bold tracking-tight">SarkarBrothers'</h2>
               </Link>
               <button
                 className="flex items-center justify-center size-10 rounded-lg hover:bg-[#f5f3f0] dark:hover:bg-[#332e22] transition-colors"

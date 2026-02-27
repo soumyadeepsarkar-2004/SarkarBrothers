@@ -1,7 +1,7 @@
 <div align="center">
 </div>
 
-# 🎁 ToyWonder - Unwrap the Magic of Play
+# 🎁 SarkarBrothers' - Unwrap the Magic of Play
 
 A modern, AI-powered e-commerce platform for toys and gifts built with React, TypeScript, and Google Gemini AI.
 
@@ -48,7 +48,7 @@ A modern, AI-powered e-commerce platform for toys and gifts built with React, Ty
    Edit `.env` and add your Gemini API key:
    ```env
    GEMINI_API_KEY=your_actual_gemini_api_key_here
-   MONGODB_URI=mongodb://localhost:27017/toywonder
+   MONGODB_URI=mongodb://localhost:27017/sarkarbrothers
    PORT=5000
    ```
 
@@ -71,7 +71,7 @@ A modern, AI-powered e-commerce platform for toys and gifts built with React, Ty
 ## 📁 Project Structure
 
 ```
-ToyWonder/
+SarkarBrothers'/
 ├── components/          # Reusable React components
 │   ├── Navbar.tsx
 │   ├── LoginModal.tsx

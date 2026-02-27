@@ -104,7 +104,7 @@ const ImageGenerator: React.FC = () => {
             if (generatedImageUrl.startsWith('data:')) {
                 const link = document.createElement('a');
                 link.href = generatedImageUrl;
-                link.download = `toywonder-${activeTab}-${Date.now()}.png`;
+                link.download = `sarkarbrothers-${activeTab}-${Date.now()}.png`;
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);

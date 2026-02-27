@@ -160,7 +160,7 @@ export const mockUsers: Record<string, UserProfile> = {
     email: 'admin@example.com',
     phone: '+91 99999 00000',
     avatar: 'https://api.dicebear.com/8.x/initials/svg?seed=Admin&backgroundColor=f4c025,8a8060&backgroundType=solid,gradientLinear&radius=50',
-    bio: 'Administrator for ToyWonder. Managing products and orders.',
+    bio: "Administrator for SarkarBrothers'. Managing products and orders.",
     preferences: { newsletter: false, smsNotifications: true }
   }
 };

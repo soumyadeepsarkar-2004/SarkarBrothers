@@ -15,9 +15,9 @@ const WhatsAppOrder: React.FC = () => {
   const buildMessage = () => {
     if (items.length > 0) {
       const itemLines = items.map(i => `• ${i.name} x${i.quantity} — ${formatPrice(i.price * i.quantity)}`).join('\n');
-      return `Hello ToyWonder! 👋\n\nI'd like to order:\n${itemLines}\n\nTotal: ${formatPrice(cartTotal)}\n\nPlease confirm availability and payment details. Thank you!`;
+      return `Hello SarkarBrothers'! 👋\n\nI'd like to order:\n${itemLines}\n\nTotal: ${formatPrice(cartTotal)}\n\nPlease confirm availability and payment details. Thank you!`;
     }
-    return `Hello ToyWonder! 👋\n\nI'd like to place an order. Could you help me with availability and payment details? Thank you!`;
+    return `Hello SarkarBrothers'! 👋\n\nI'd like to place an order. Could you help me with availability and payment details? Thank you!`;
   };
 
   const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(buildMessage())}`;

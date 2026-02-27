@@ -48,7 +48,7 @@ const VoiceAssistant: React.FC = () => {
                 role: 'assistant',
                 text: language === 'bn'
                     ? 'হ্যালো! আমি আপনার ভয়েস সহকারী। আজ কিভাবে সেরা খেলনা খুঁজে পেতে সাহায্য করতে পারি? 🎮'
-                    : 'Hello! I\'m your ToyWonder voice assistant. Ask me about toys, gifts, or recommendations! 🎮',
+                    : 'Hello! I\'m your SarkarBrothers\' voice assistant. Ask me about toys, gifts, or recommendations! 🎮',
                 timestamp: new Date()
             }]);
         }
