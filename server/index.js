@@ -31,8 +31,8 @@ const IS_PROD = NODE_ENV === 'production';
 let dbConnected = false;
 
 // ─── Middleware ─────────────────────────────────────────────────
-app.use(helmet({ 
-  crossOriginResourcePolicy: { policy: 'cross-origin' }, 
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
   contentSecurityPolicy: IS_PROD ? {
     directives: {
       ...helmet.contentSecurityPolicy.getDefaultDirectives(),
