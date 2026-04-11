@@ -1,6 +1,7 @@
 
 import 'dotenv/config';
 import express from 'express';
+import path from 'path';
 import mongoose from 'mongoose';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -16,13 +17,31 @@ import { products as seedProducts, mockUsers, orders as mockOrders, salesData } 
 // ─── Configuration ─────────────────────────────────────────────
 const app = express();
 const PORT = process.env.PORT || 5000;
-const JWT_SECRET = process.env.JWT_SECRET || 'sarkarbrothers-secret-key-change-in-production';
+const MONGO_URI = process.env.MONGODB_URI;
+const JWT_SECRET = process.env.JWT_SECRET;
+const GEMINI_KEY = process.env.GEMINI_API_KEY;
+if (!JWT_SECRET && IS_PROD) {
+  console.error('FATAL: JWT_SECRET environment variable is not set in production.');
+  process.exit(1);
+}
+const SECRET = JWT_SECRET || 'sarkarbrothers-dev-secret';
 const NODE_ENV = process.env.NODE_ENV || 'development';
+const IS_PROD = NODE_ENV === 'production';
 
 let dbConnected = false;
 
 // ─── Middleware ─────────────────────────────────────────────────
-app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' }, contentSecurityPolicy: false }));
+app.use(helmet({ 
+  crossOriginResourcePolicy: { policy: 'cross-origin' }, 
+  contentSecurityPolicy: IS_PROD ? {
+    directives: {
+      ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+      "img-src": ["'self'", "data:", "https:", "http:"],
+      "connect-src": ["'self'", "https://generativelanguage.googleapis.com", "https://*.firebaseio.com", "https://*.googleapis.com"],
+      "script-src": ["'self'", "'unsafe-inline'", "https://cdn.tailwindcss.com"],
+    }
+  } : false
+}));
 app.use(compression());
 app.use(cookieParser());
 app.use(cors({ origin: true, credentials: true }));
@@ -35,7 +54,7 @@ app.use('/api/', apiLimiter);
 const aiLimiter = rateLimit({ windowMs: 60 * 1000, max: 20, message: { error: 'AI rate limit exceeded' } });
 
 // Request logger (dev only)
-if (NODE_ENV === 'development') {
+if (!IS_PROD) {
   app.use((req, res, next) => {
     const ts = new Date().toISOString();
     console.log(ts + ' ' + req.method + ' ' + req.path);
@@ -43,14 +62,45 @@ if (NODE_ENV === 'development') {
   });
 }
 
+// Global error handler
+const errorHandler = (err, req, res, next) => {
+  console.error('API Error:', err.stack);
+  res.status(err.status || 500).json({
+    error: IS_PROD ? 'Internal server error' : err.message,
+  });
+};
+
+// ─── Health Check & Static Files ───────────────────────────────
+// Move health check before other routes
+app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    mongodb: dbConnected ? 'connected' : 'mock data mode',
+    ai: ai ? 'available' : 'unavailable',
+    uptime: process.uptime(),
+  });
+});
+
+// Serve frontend in production
+if (IS_PROD) {
+  const __dirname = path.resolve();
+  app.use(express.static(path.join(__dirname, 'dist')));
+  app.get('*', (req, res) => {
+    if (!req.path.startsWith('/api')) {
+      res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+    }
+  });
+}
+
 // ─── Database Connection ───────────────────────────────────────
 const connectDB = async () => {
-  if (!process.env.MONGODB_URI) {
+  if (!MONGO_URI) {
     console.log('No MONGODB_URI found. Running with mock data.');
     return;
   }
   try {
-    await mongoose.connect(process.env.MONGODB_URI, {
+    await mongoose.connect(MONGO_URI, {
       serverSelectionTimeoutMS: 5000,
       socketTimeoutMS: 45000,
     });
@@ -77,7 +127,7 @@ const authenticate = (req, res, next) => {
       req.user = { id: parts[2], email: parts[2] === 'user-1' ? 'sarah.jenkins@example.com' : 'admin@example.com' };
       return next();
     }
-    req.user = jwt.verify(token, JWT_SECRET);
+    req.user = jwt.verify(token, SECRET);
     next();
   } catch (err) {
     return res.status(401).json({ error: 'Invalid or expired token' });
@@ -89,6 +139,7 @@ const getProductsFromSource = async (query = {}) => {
   if (dbConnected) {
     try { return await Product.find(query).lean(); } catch (e) { /* fall through */ }
   }
+  if (IS_PROD) return [];
   let results = [...seedProducts];
   if (query.category) results = results.filter(p => p.category === query.category);
   return results;
@@ -98,25 +149,15 @@ const getProductByIdFromSource = async (id) => {
   if (dbConnected) {
     try { return await Product.findById(id).lean(); } catch (e) { /* fall through */ }
   }
+  if (IS_PROD) return null;
   return seedProducts.find(p => p.id === id) || null;
 };
 
-// Health check
-app.get('/api/health', (req, res) => {
-  res.json({
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-    mongodb: dbConnected ? 'connected' : 'mock data mode',
-    ai: ai ? 'available' : 'unavailable',
-    uptime: process.uptime(),
-  });
-});
-
 // ─── Gemini AI Setup ───────────────────────────────────────────
 let ai = null;
-if (process.env.GEMINI_API_KEY) {
+if (GEMINI_KEY) {
   try {
-    ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+    ai = new GoogleGenAI({ apiKey: GEMINI_KEY });
     console.log('Gemini AI initialized');
   } catch (err) {
     console.error('Gemini AI init failed:', err.message);
@@ -135,14 +176,16 @@ app.post('/api/auth/register', async (req, res) => {
       if (existing) return res.status(409).json({ error: 'Email already registered' });
       const passwordHash = await bcrypt.hash(password, 12);
       const user = await User.create({ name, email, passwordHash, phone, avatar: 'https://api.dicebear.com/8.x/initials/svg?seed=' + encodeURIComponent(name) });
-      const token = jwt.sign({ id: user._id, email: user.email, role: 'user' }, JWT_SECRET, { expiresIn: '7d' });
+      const token = jwt.sign({ id: user._id, email: user.email, role: 'user' }, SECRET, { expiresIn: '7d' });
       return res.status(201).json({ user: { id: user._id, name: user.name, email: user.email, phone: user.phone, avatar: user.avatar, role: 'user' }, token });
     }
+
+    if (IS_PROD) return res.status(503).json({ error: 'Database disconnected' });
 
     if (mockUsers[email]) return res.status(409).json({ error: 'Email already registered' });
     const newUser = { id: 'user-' + Date.now(), name, email, phone: phone || '', avatar: 'https://api.dicebear.com/8.x/initials/svg?seed=' + encodeURIComponent(name), bio: '', preferences: { newsletter: true, smsNotifications: false } };
     mockUsers[email] = newUser;
-    const token = jwt.sign({ id: newUser.id, email, role: 'user' }, JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign({ id: newUser.id, email, role: 'user' }, SECRET, { expiresIn: '7d' });
     res.status(201).json({ user: { ...newUser, role: 'user' }, token });
   } catch (err) {
     console.error('Register error:', err);
@@ -155,16 +198,18 @@ app.post('/api/auth/login', async (req, res) => {
     const { email, password } = req.body;
     if (!email || !password) return res.status(400).json({ error: 'Email and password are required' });
 
-    // Demo accounts
-    if (email === 'user@example.com' && password === 'password') {
-      const profile = mockUsers['sarah.jenkins@example.com'];
-      const token = jwt.sign({ id: profile.id, email: profile.email, role: 'user' }, JWT_SECRET, { expiresIn: '7d' });
-      return res.json({ user: { ...profile, role: 'user' }, token });
-    }
-    if (email === 'admin@example.com' && password === 'adminpass') {
-      const profile = mockUsers['admin@example.com'];
-      const token = jwt.sign({ id: profile.id, email: profile.email, role: 'admin' }, JWT_SECRET, { expiresIn: '7d' });
-      return res.json({ user: { ...profile, role: 'admin' }, token });
+    // Demo accounts (only in dev)
+    if (!IS_PROD) {
+      if (email === 'user@example.com' && password === 'password') {
+        const profile = mockUsers['sarah.jenkins@example.com'];
+        const token = jwt.sign({ id: profile.id, email: profile.email, role: 'user' }, SECRET, { expiresIn: '7d' });
+        return res.json({ user: { ...profile, role: 'user' }, token });
+      }
+      if (email === 'admin@example.com' && password === 'adminpass') {
+        const profile = mockUsers['admin@example.com'];
+        const token = jwt.sign({ id: profile.id, email: profile.email, role: 'admin' }, SECRET, { expiresIn: '7d' });
+        return res.json({ user: { ...profile, role: 'admin' }, token });
+      }
     }
 
     // DB login
@@ -174,7 +219,7 @@ app.post('/api/auth/login', async (req, res) => {
       const valid = await bcrypt.compare(password, user.passwordHash);
       if (!valid) return res.status(401).json({ error: 'Invalid credentials' });
       const role = email === 'admin@example.com' ? 'admin' : 'user';
-      const token = jwt.sign({ id: user._id, email: user.email, role }, JWT_SECRET, { expiresIn: '7d' });
+      const token = jwt.sign({ id: user._id, email: user.email, role }, SECRET, { expiresIn: '7d' });
       return res.json({ user: { id: user._id, name: user.name, email: user.email, phone: user.phone, avatar: user.avatar, role }, token });
     }
 
@@ -211,6 +256,7 @@ app.get('/api/products', async (req, res) => {
     }
 
     // Mock data fallback
+    if (IS_PROD) return res.status(503).json({ error: 'Database disconnected' });
     let results = [...seedProducts];
     if (category) results = results.filter(p => p.category === category);
     if (search) { const q = search.toLowerCase(); results = results.filter(p => p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q)); }
@@ -247,13 +293,11 @@ app.get('/api/user/profile', async (req, res) => {
     if (!email) return res.status(400).json({ error: 'Email parameter required' });
 
     if (dbConnected) {
-      try {
-        const user = await User.findOne({ email }).select('-passwordHash').lean();
-        if (user) return res.json(user);
-      } catch (dbErr) { console.error('DB profile lookup failed:', dbErr.message); }
+      const user = await User.findOne({ email }).select('-passwordHash').lean();
+      if (user) return res.json(user);
     }
 
-    if (mockUsers[email]) return res.json(mockUsers[email]);
+    if (!IS_PROD && mockUsers[email]) return res.json(mockUsers[email]);
     return res.status(404).json({ error: 'Profile not found' });
   } catch (err) {
     console.error('User profile error:', err);
@@ -575,16 +619,11 @@ app.post('/api/admin/seed', async (req, res) => {
 });
 
 // ─── Catch-all & Error Handler ─────────────────────────────────
-app.use('/api/{*path}', (req, res) => {
+app.use('/api/*', (req, res) => {
   res.status(404).json({ error: 'API endpoint not found' });
 });
 
-app.use((err, req, res, next) => {
-  console.error('Unhandled error:', err);
-  res.status(err.status || 500).json({
-    error: NODE_ENV === 'production' ? 'Internal server error' : err.message,
-  });
-});
+app.use(errorHandler);
 
 // ─── Graceful Shutdown ─────────────────────────────────────────
 const shutdown = async (signal) => {

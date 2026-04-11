@@ -9,7 +9,7 @@ const WhatsAppOrder: React.FC = () => {
   const { items, cartTotal } = useCart();
   const { t } = useLanguage();
 
-  const phoneNumber = '919876543210';
+  const phoneNumber = '917278570727';
 
   // Build message from actual cart items, or a generic greeting
   const buildMessage = () => {
