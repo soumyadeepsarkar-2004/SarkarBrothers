@@ -23,8 +23,13 @@
     "cors": "^2.8.6",
     "dotenv": "^17.4.1",
     "express": "^5.2.1",
+<<<<<<< HEAD
     "express-rate-limit": "^8.2.1",
     "firebase": "^12.12.0",
+=======
+    "express-rate-limit": "^8.2.2",
+    "firebase": "^12.9.0",
+>>>>>>> origin/dependabot/npm_and_yarn/npm_and_yarn-d245ff2c85
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.4.1",
