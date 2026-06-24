@@ -1,0 +1,293 @@
+service: sarkarbrothers-api
+
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: ap-south-1 # Mumbai region for India
+  stage: ${opt:stage, 'dev'}
+  
+  # IAM role with required permissions
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - logs:CreateLogGroup
+            - logs:CreateLogStream
+            - logs:PutLogEvents
+          Resource: 'arn:aws:logs:*:*:*'
+        - Effect: Allow
+          Action:
+            - dynamodb:Query
+            - dynamodb:Scan
+            - dynamodb:GetItem
+            - dynamodb:PutItem
+            - dynamodb:UpdateItem
+            - dynamodb:DeleteItem
+            - dynamodb:BatchWriteItem
+          Resource:
+            - 'arn:aws:dynamodb:ap-south-1:*:table/${self:service}-*'
+        - Effect: Allow
+          Action:
+            - s3:GetObject
+            - s3:PutObject
+            - s3:DeleteObject
+          Resource: 'arn:aws:s3:::${self:service}-*/*'
+        - Effect: Allow
+          Action:
+            - secretsmanager:GetSecretValue
+          Resource: 'arn:aws:secretsmanager:ap-south-1:*:secret:${self:service}/*'
+
+  # Environment variables
+  environment:
+    STAGE: ${self:provider.stage}
+    SERVICE_NAME: ${self:service}
+    MONGODB_URI: ${ssm:/${self:service}/${self:provider.stage}/mongodb-uri}
+    JWT_SECRET: ${ssm:/${self:service}/${self:provider.stage}/jwt-secret~true}
+    STRIPE_SECRET_KEY: ${ssm:/${self:service}/${self:provider.stage}/stripe-secret~true}
+    STRIPE_WEBHOOK_SECRET: ${ssm:/${self:service}/${self:provider.stage}/stripe-webhook~true}
+    GEMINI_API_KEY: ${ssm:/${self:service}/${self:provider.stage}/gemini-key~true}
+    NODE_ENV: ${self:provider.stage}
+
+  # CORS configuration
+  cors: true
+
+  # HTTP API (cheaper than REST API)
+  httpApi:
+    metrics: true
+
+functions:
+  # API Gateway Handler
+  api:
+    handler: lambda/api.handler
+    description: Main API handler for all routes
+    timeout: 30
+    memorySize: 512
+    events:
+      - httpApi:
+          path: /{proxy+}
+          method: ANY
+      - httpApi:
+          path: /
+          method: ANY
+    provisionedConcurrency: ${self:custom.provisionedConcurrency.${self:provider.stage}, 1}
+
+  # Payment Webhook Handler
+  webhook:
+    handler: lambda/webhook.handler
+    description: Stripe webhook handler
+    timeout: 30
+    memorySize: 256
+    events:
+      - httpApi:
+          path: /api/payments/webhook
+          method: POST
+    # Webhooks don't need auth verification in function signature
+    
+  # Scheduled Jobs
+  cleanupExpiredSessions:
+    handler: lambda/jobs/cleanup-sessions.handler
+    description: Clean up expired JWT sessions daily
+    events:
+      - schedule:
+          rate: cron(0 2 * * ? *)  # 2 AM UTC daily
+          enabled: true
+    timeout: 60
+    memorySize: 256
+
+  # Scheduled Order Status Update
+  updateOrderStatuses:
+    handler: lambda/jobs/update-orders.handler
+    description: Update pending orders daily
+    events:
+      - schedule:
+          rate: cron(0 3 * * ? *)  # 3 AM UTC daily
+          enabled: true
+    timeout: 120
+    memorySize: 512
+
+plugins:
+  - serverless-plugin-tracing
+  - serverless-offline
+  - serverless-dynamodb-local
+  - serverless-http
+
+custom:
+  provisionedConcurrency:
+    prod: 10
+    staging: 5
+    dev: 1
+
+  # Offline plugin config (local development)
+  serverless-offline:
+    httpPort: 4000
+    websocketPort: 4001
+    lambdaPort: 4002
+    useWorkerThreads: true
+
+  # DynamoDB local config
+  dynamodb:
+    stages:
+      - dev
+    start:
+      port: 8000
+      inMemory: true
+      migrate: true
+      seed: true
+    seed:
+      dev:
+        sources:
+          - table: ${self:service}-products-${self:provider.stage}
+            sources: [./data/seed-products.json]
+          - table: ${self:service}-users-${self:provider.stage}
+            sources: [./data/seed-users.json]
+
+# Resources (DynamoDB tables, S3 buckets, etc.)
+resources:
+  Resources:
+    # Products Table
+    ProductsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:service}-products-${self:provider.stage}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+          - AttributeName: category
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+          - AttributeName: category
+            KeyType: RANGE
+        GlobalSecondaryIndexes:
+          - IndexName: CategoryIndex
+            KeySchema:
+              - AttributeName: category
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
+
+    # Orders Table
+    OrdersTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:service}-orders-${self:provider.stage}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+          - AttributeName: userId
+            AttributeType: S
+          - AttributeName: createdAt
+            AttributeType: N
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: UserIdIndex
+            KeySchema:
+              - AttributeName: userId
+                KeyType: HASH
+              - AttributeName: createdAt
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+
+    # Users Table
+    UsersTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:service}-users-${self:provider.stage}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+          - AttributeName: email
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: EmailIndex
+            KeySchema:
+              - AttributeName: email
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
+
+    # Audit Logs Table
+    AuditLogsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:service}-audit-${self:provider.stage}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+          - AttributeName: timestamp
+            AttributeType: N
+          - AttributeName: userId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+          - AttributeName: timestamp
+            KeyType: RANGE
+        GlobalSecondaryIndexes:
+          - IndexName: UserIdIndex
+            KeySchema:
+              - AttributeName: userId
+                KeyType: HASH
+              - AttributeName: timestamp
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+        TimeToLiveSpecification:
+          AttributeName: ttl
+          Enabled: true
+
+    # S3 bucket for uploads
+    UploadsBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:service}-uploads-${self:provider.stage}
+        VersioningConfiguration:
+          Status: Enabled
+
+    # CloudFront Distribution (optional)
+    CloudFrontDistribution:
+      Type: AWS::CloudFront::Distribution
+      Properties:
+        DistributionConfig:
+          Enabled: true
+          Origins:
+            - DomainName: !GetAtt UploadsBucket.DomainName
+              Id: S3Origin
+          DefaultCacheBehavior:
+            AllowedMethods:
+              - GET
+              - HEAD
+            CachePolicyId: !Ref CachePolicyForUploads
+            OriginAccessIdentity: origin-access-identity/cloudfront/ABCDEFG1234567
+
+# Outputs
+outputs:
+  ApiGatewayUrl:
+    Description: HTTP API Gateway URL
+    Value: !Sub "https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com"
+  
+  ProductsTableName:
+    Description: DynamoDB Products Table
+    Value: !Ref ProductsTable
+  
+  OrdersTableName:
+    Description: DynamoDB Orders Table
+    Value: !Ref OrdersTable
+  
+  UsersTableName:
+    Description: DynamoDB Users Table
+    Value: !Ref UsersTable

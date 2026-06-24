@@ -41,10 +41,12 @@ const productSchema = new mongoose.Schema({
   rating: { type: Number, default: 0 },
   reviews: { type: Number, default: 0 },
   image: String,
+  imageUrl: String,
   badge: String,
   description: String,
   specs: Map, // Key-value pairs for specs
   stock: { type: Number, default: 100 },
+  isPublished: { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now }
 });
 

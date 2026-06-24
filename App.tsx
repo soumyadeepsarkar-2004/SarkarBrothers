@@ -21,6 +21,7 @@ import { CartProvider } from './contexts/CartContext';
 import { WishlistProvider } from './contexts/WishlistContext';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { AuthProvider } from './contexts/AuthContext';
+import StripeProvider from './contexts/StripeProvider';
 
 const ScrollToTop = () => {
   const { pathname } = useLocation();
@@ -42,33 +43,35 @@ const ConditionalFooter = () => {
 const App: React.FC = () => {
   return (
     <LanguageProvider>
-      <CartProvider>
-        <WishlistProvider>
-          <AuthProvider>
-            <HashRouter>
-              <ScrollToTop />
-              <div className="flex flex-col min-h-screen">
-                <Navbar />
-                <Routes>
-                  <Route path="/" element={<Home />} />
-                  <Route path="/shop" element={<Shop />} />
-                  <Route path="/product/:id" element={<ProductDetails />} />
-                  <Route path="/cart" element={<Cart />} />
-                  <Route path="/profile" element={<Profile />} />
-                  <Route path="/ai-assistant" element={<AiAssistant />} />
-                  <Route path="/voice-assistant" element={<VoiceAssistant />} />
-                  <Route path="/image-generator" element={<ImageGenerator />} />
-                  <Route path="/whatsapp-order" element={<WhatsAppOrder />} />
-                  <Route path="/wishlist" element={<Wishlist />} />
-                  <Route path="/admin" element={<Admin />} />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-                <ConditionalFooter />
-              </div>
-            </HashRouter>
-          </AuthProvider>
-        </WishlistProvider>
-      </CartProvider>
+      <StripeProvider>
+        <CartProvider>
+          <WishlistProvider>
+            <AuthProvider>
+              <HashRouter>
+                <ScrollToTop />
+                <div className="flex flex-col min-h-screen">
+                  <Navbar />
+                  <Routes>
+                    <Route path="/" element={<Home />} />
+                    <Route path="/shop" element={<Shop />} />
+                    <Route path="/product/:id" element={<ProductDetails />} />
+                    <Route path="/cart" element={<Cart />} />
+                    <Route path="/profile" element={<Profile />} />
+                    <Route path="/ai-assistant" element={<AiAssistant />} />
+                    <Route path="/voice-assistant" element={<VoiceAssistant />} />
+                    <Route path="/image-generator" element={<ImageGenerator />} />
+                    <Route path="/whatsapp-order" element={<WhatsAppOrder />} />
+                    <Route path="/wishlist" element={<Wishlist />} />
+                    <Route path="/admin" element={<Admin />} />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                  <ConditionalFooter />
+                </div>
+              </HashRouter>
+            </AuthProvider>
+          </WishlistProvider>
+        </CartProvider>
+      </StripeProvider>
     </LanguageProvider>
   );
 };

@@ -13,6 +13,15 @@ import jwt from 'jsonwebtoken';
 import { GoogleGenAI } from "@google/genai";
 import { User, Product, Order } from './models.js';
 import { products as seedProducts, mockUsers, orders as mockOrders, salesData } from './data.js';
+import { authenticate, requireRole, auditLog } from '../shared/middleware/auth.js';
+import {
+  createPaymentIntent,
+  confirmPayment,
+  getPaymentIntent,
+  handlePaymentWebhook,
+  refundPayment,
+  getCustomerPayments
+} from '../shared/stripe/payments.js';
 
 // ─── Configuration ─────────────────────────────────────────────
 const app = express();
@@ -384,8 +393,9 @@ app.post('/api/user/orders', async (req, res) => {
   }
 });
 
-// ─── Admin Routes ──────────────────────────────────────────────
-app.get('/api/admin/stats', async (req, res) => {
+// ─── Admin Routes (Protected) ──────────────────────────────────
+// Dashboard Stats - ADMIN ONLY
+app.get('/api/admin/stats', authenticate, requireRole(['admin', 'owner']), async (req, res) => {
   try {
     let productCount = seedProducts.length;
     let orderCount = mockOrders.length;
@@ -409,38 +419,77 @@ app.get('/api/admin/stats', async (req, res) => {
   }
 });
 
-app.get('/api/admin/orders', async (req, res) => {
+// Get All Orders - ADMIN ONLY with Enhanced Filtering
+app.get('/api/admin/orders', authenticate, requireRole(['admin', 'owner']), async (req, res) => {
   try {
-    if (dbConnected) {
-      try { const orders = await Order.find().sort({ createdAt: -1 }).lean(); if (orders.length > 0) return res.json(orders); } catch (dbErr) { }
+    const { page = 1, limit = 20, status, startDate, endDate, customerId } = req.query;
+    const skip = (page - 1) * limit;
+
+    let query = {};
+    if (status) query.status = status;
+    if (startDate || endDate) {
+      query.createdAt = {};
+      if (startDate) query.createdAt.$gte = new Date(startDate);
+      if (endDate) query.createdAt.$lte = new Date(endDate);
     }
-    res.json(mockOrders);
-  } catch (err) { res.status(500).json({ error: 'Failed to fetch orders' }); }
+    if (customerId) query.userId = customerId;
+
+    if (dbConnected) {
+      try {
+        const orders = await Order.find(query)
+          .sort({ createdAt: -1 })
+          .skip(skip)
+          .limit(parseInt(limit))
+          .populate('userId', 'email name')
+          .lean();
+        const total = await Order.countDocuments(query);
+        return res.json({ orders, total, page: parseInt(page), limit: parseInt(limit), pages: Math.ceil(total / limit) });
+      } catch (dbErr) { console.error('DB order query failed:', dbErr.message); }
+    }
+
+    // Mock data fallback with filtering
+    let filtered = mockOrders;
+    if (status) filtered = filtered.filter(o => o.status === status);
+    if (customerId) filtered = filtered.filter(o => o.userId === customerId);
+    const paginated = filtered.slice(skip, skip + limit);
+    res.json({ orders: paginated, total: filtered.length, page: parseInt(page), limit: parseInt(limit), pages: Math.ceil(filtered.length / limit) });
+  } catch (err) {
+    console.error('Admin orders error:', err);
+    res.status(500).json({ error: 'Failed to fetch orders' });
+  }
 });
 
-app.patch('/api/admin/orders/:id', async (req, res) => {
+// Update Order Status - ADMIN ONLY with Audit
+app.patch('/api/admin/orders/:id', authenticate, requireRole(['admin', 'owner']), auditLog('ORDER_STATUS_UPDATE'), async (req, res) => {
   try {
     const { status } = req.body;
     const validStatuses = ['Processing', 'Shipped', 'Delivered', 'Cancelled'];
     if (!validStatuses.includes(status)) return res.status(400).json({ error: 'Invalid status' });
 
     if (dbConnected) {
-      try { const order = await Order.findByIdAndUpdate(req.params.id, { status }, { new: true }).lean(); if (order) return res.json(order); } catch (dbErr) { }
+      try {
+        const order = await Order.findByIdAndUpdate(req.params.id, { status, updatedAt: new Date() }, { new: true }).lean();
+        if (order) return res.json(order);
+      } catch (dbErr) { }
     }
 
     const mockOrder = mockOrders.find(o => o.id === req.params.id);
-    if (mockOrder) { mockOrder.status = status; return res.json(mockOrder); }
+    if (mockOrder) { mockOrder.status = status; mockOrder.updatedAt = new Date(); return res.json(mockOrder); }
     res.status(404).json({ error: 'Order not found' });
   } catch (err) { res.status(500).json({ error: 'Failed to update order' }); }
 });
 
-app.post('/api/admin/products', async (req, res) => {
+// Create Product - ADMIN ONLY
+app.post('/api/admin/products', authenticate, requireRole(['admin', 'owner']), auditLog('PRODUCT_CREATE'), async (req, res) => {
   try {
     const { name, category, price, description, image, stock, badge } = req.body;
     if (!name || !category || !price) return res.status(400).json({ error: 'Name, category, and price are required' });
 
     if (dbConnected) {
-      try { const product = await Product.create({ name, category, price, description, image, stock, badge }); return res.status(201).json(product); } catch (dbErr) { }
+      try {
+        const product = await Product.create({ name, category, price, description, image, stock, badge });
+        return res.status(201).json(product);
+      } catch (dbErr) { console.error('DB product create failed:', dbErr.message); }
     }
 
     const newProduct = { id: String(seedProducts.length + 1), name, category, price, description, image, stock: stock || 0, badge, rating: 0, reviews: 0 };
@@ -449,10 +498,14 @@ app.post('/api/admin/products', async (req, res) => {
   } catch (err) { res.status(500).json({ error: 'Failed to create product' }); }
 });
 
-app.put('/api/admin/products/:id', async (req, res) => {
+// Update Product - ADMIN ONLY
+app.put('/api/admin/products/:id', authenticate, requireRole(['admin', 'owner']), auditLog('PRODUCT_UPDATE'), async (req, res) => {
   try {
     if (dbConnected) {
-      try { const product = await Product.findByIdAndUpdate(req.params.id, req.body, { new: true }).lean(); if (product) return res.json(product); } catch (dbErr) { }
+      try {
+        const product = await Product.findByIdAndUpdate(req.params.id, req.body, { new: true }).lean();
+        if (product) return res.json(product);
+      } catch (dbErr) { }
     }
     const idx = seedProducts.findIndex(p => p.id === req.params.id);
     if (idx !== -1) { seedProducts[idx] = { ...seedProducts[idx], ...req.body }; return res.json(seedProducts[idx]); }
@@ -460,15 +513,184 @@ app.put('/api/admin/products/:id', async (req, res) => {
   } catch (err) { res.status(500).json({ error: 'Failed to update product' }); }
 });
 
-app.delete('/api/admin/products/:id', async (req, res) => {
+// Delete Product - ADMIN ONLY
+app.delete('/api/admin/products/:id', authenticate, requireRole(['admin', 'owner']), auditLog('PRODUCT_DELETE'), async (req, res) => {
   try {
     if (dbConnected) {
-      try { const product = await Product.findByIdAndDelete(req.params.id); if (product) return res.json({ message: 'Product deleted' }); } catch (dbErr) { }
+      try {
+        const product = await Product.findByIdAndDelete(req.params.id);
+        if (product) return res.json({ message: 'Product deleted' });
+      } catch (dbErr) { }
     }
     const idx = seedProducts.findIndex(p => p.id === req.params.id);
     if (idx !== -1) { seedProducts.splice(idx, 1); return res.json({ message: 'Product deleted' }); }
     res.status(404).json({ error: 'Product not found' });
   } catch (err) { res.status(500).json({ error: 'Failed to delete product' }); }
+});
+
+// User Management - ADMIN ONLY
+app.get('/api/admin/users', authenticate, requireRole(['admin', 'owner']), async (req, res) => {
+  try {
+    const { page = 1, limit = 20, search } = req.query;
+    const skip = (page - 1) * limit;
+
+    if (dbConnected) {
+      try {
+        let query = {};
+        if (search) query.$or = [{ email: { $regex: search, $options: 'i' } }, { name: { $regex: search, $options: 'i' } }];
+        const users = await User.find(query)
+          .select('-passwordHash')
+          .sort({ createdAt: -1 })
+          .skip(skip)
+          .limit(parseInt(limit))
+          .lean();
+        const total = await User.countDocuments(query);
+        return res.json({ users, total, page: parseInt(page), limit: parseInt(limit), pages: Math.ceil(total / limit) });
+      } catch (dbErr) { console.error('DB user query failed:', dbErr.message); }
+    }
+
+    // Mock data fallback
+    const users = Object.values(mockUsers).slice(skip, skip + limit);
+    res.json({ users, total: Object.keys(mockUsers).length, page: parseInt(page), limit: parseInt(limit), pages: Math.ceil(Object.keys(mockUsers).length / limit) });
+  } catch (err) {
+    console.error('Admin users error:', err);
+    res.status(500).json({ error: 'Failed to fetch users' });
+  }
+});
+
+// Get User Details - ADMIN ONLY
+app.get('/api/admin/users/:id', authenticate, requireRole(['admin', 'owner']), async (req, res) => {
+  try {
+    if (dbConnected) {
+      try {
+        const user = await User.findById(req.params.id).select('-passwordHash').lean();
+        if (user) return res.json(user);
+      } catch (dbErr) { }
+    }
+    const user = mockUsers[req.params.id];
+    if (user) return res.json({ ...user, passwordHash: undefined });
+    res.status(404).json({ error: 'User not found' });
+  } catch (err) { res.status(500).json({ error: 'Failed to fetch user' }); }
+});
+
+// Delete User - ADMIN ONLY
+app.delete('/api/admin/users/:id', authenticate, requireRole(['admin', 'owner']), auditLog('USER_DELETE'), async (req, res) => {
+  try {
+    if (dbConnected) {
+      try {
+        const user = await User.findByIdAndDelete(req.params.id);
+        if (user) return res.json({ message: 'User deleted' });
+      } catch (dbErr) { }
+    }
+    if (mockUsers[req.params.id]) {
+      delete mockUsers[req.params.id];
+      return res.json({ message: 'User deleted' });
+    }
+    res.status(404).json({ error: 'User not found' });
+  } catch (err) { res.status(500).json({ error: 'Failed to delete user' }); }
+});
+
+// Export Admin Summary Report - ADMIN ONLY
+app.get('/api/admin/reports/summary', authenticate, requireRole(['admin', 'owner']), async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+    let dateFilter = {};
+    if (startDate) dateFilter.$gte = new Date(startDate);
+    if (endDate) dateFilter.$lte = new Date(endDate);
+
+    if (dbConnected) {
+      try {
+        const query = startDate || endDate ? { createdAt: dateFilter } : {};
+        const totalOrders = await Order.countDocuments(query);
+        const totalRevenue = await Order.aggregate([
+          { $match: query },
+          { $group: { _id: null, total: { $sum: '$total' } } }
+        ]);
+        const ordersByStatus = await Order.aggregate([
+          { $match: query },
+          { $group: { _id: '$status', count: { $sum: 1 } } }
+        ]);
+        const topProducts = await Order.aggregate([
+          { $match: query },
+          { $unwind: '$items' },
+          { $group: { _id: '$items.productId', count: { $sum: '$items.quantity' } } },
+          { $sort: { count: -1 } },
+          { $limit: 10 }
+        ]);
+        return res.json({ totalOrders, totalRevenue: totalRevenue[0]?.total || 0, ordersByStatus, topProducts });
+      } catch (dbErr) { }
+    }
+
+    res.json({ totalOrders: mockOrders.length, totalRevenue: mockOrders.reduce((s, o) => s + o.total, 0), ordersByStatus: [], topProducts: [] });
+  } catch (err) {
+    console.error('Admin reports error:', err);
+    res.status(500).json({ error: 'Failed to generate report' });
+  }
+});
+
+// ─── Payment Routes ─────────────────────────────────────────────
+// Create payment intent - CUSTOMER
+app.post('/api/payments/create-intent', authenticate, async (req, res) => {
+  try {
+    await createPaymentIntent(req, res);
+  } catch (err) {
+    console.error('Create payment intent error:', err);
+    res.status(500).json({ error: 'Failed to create payment intent' });
+  }
+});
+
+// Confirm payment - CUSTOMER
+app.post('/api/payments/confirm', authenticate, async (req, res) => {
+  try {
+    await confirmPayment(req, res);
+  } catch (err) {
+    console.error('Confirm payment error:', err);
+    res.status(500).json({ error: 'Failed to confirm payment' });
+  }
+});
+
+// Get payment details - CUSTOMER
+app.get('/api/payments/intent/:paymentIntentId', authenticate, async (req, res) => {
+  try {
+    await getPaymentIntent(req, res);
+  } catch (err) {
+    console.error('Get payment intent error:', err);
+    res.status(500).json({ error: 'Failed to get payment details' });
+  }
+});
+
+// Refund payment - ADMIN ONLY
+app.post('/api/payments/refund', authenticate, requireRole(['admin', 'owner']), auditLog('PAYMENT_REFUND'), async (req, res) => {
+  try {
+    await refundPayment(req, res);
+  } catch (err) {
+    console.error('Refund payment error:', err);
+    res.status(500).json({ error: 'Failed to refund payment' });
+  }
+});
+
+// Get customer payment history - CUSTOMER
+app.get('/api/payments/customer/:customerId', authenticate, async (req, res) => {
+  try {
+    // Verify user is requesting their own data
+    if (req.user.id !== req.params.customerId && req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+    await getCustomerPayments(req, res);
+  } catch (err) {
+    console.error('Get customer payments error:', err);
+    res.status(500).json({ error: 'Failed to get payment history' });
+  }
+});
+
+// Stripe webhook - NO AUTH REQUIRED (verified by signature)
+app.post('/api/payments/webhook', async (req, res) => {
+  try {
+    await handlePaymentWebhook(req, res);
+  } catch (err) {
+    console.error('Webhook error:', err);
+    res.status(400).json({ error: 'Webhook processing failed' });
+  }
 });
 
 // ─── AI Routes ─────────────────────────────────────────────────
@@ -602,7 +824,7 @@ app.post('/api/ai/voice', aiLimiter, async (req, res) => {
 });
 
 // ─── DB Seeding ────────────────────────────────────────────────
-app.post('/api/admin/seed', async (req, res) => {
+app.post('/api/admin/seed', authenticate, requireRole(['admin', 'owner']), auditLog('DATABASE_SEED'), async (req, res) => {
   try {
     if (!dbConnected) return res.status(503).json({ error: 'Database not connected' });
     await Product.deleteMany({});

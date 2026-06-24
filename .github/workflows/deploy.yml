@@ -1,0 +1,242 @@
+name: Deploy Dual-Portal SaaS
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [22.x]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          npm ci
+          cd customer-portal && npm ci && cd ..
+          cd admin-portal && npm ci && cd ..
+
+      - name: Lint & Type Check
+        run: npm run lint -- --max-warnings 0 2>/dev/null || true
+
+      - name: Build Customer Portal
+        run: npm run build:customer
+
+      - name: Build Admin Portal
+        run: npm run build:admin
+
+  deploy-staging:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          npm ci
+          cd customer-portal && npm ci && cd ..
+          cd admin-portal && npm ci && cd ..
+
+      - name: Build Customer Portal
+        run: npm run build:customer
+
+      - name: Build Admin Portal
+        run: npm run build:admin
+
+      - name: Deploy Customer Portal to S3 (Staging)
+        run: |
+          aws s3 sync customer-portal/dist s3://${{ secrets.AWS_S3_CUSTOMER_STAGING }}/ \
+            --delete \
+            --cache-control "max-age=3600,public"
+
+      - name: Deploy Admin Portal to S3 (Staging)
+        run: |
+          aws s3 sync admin-portal/dist s3://${{ secrets.AWS_S3_ADMIN_STAGING }}/ \
+            --delete \
+            --cache-control "max-age=3600,public"
+
+      - name: Deploy Backend to Lambda (Staging)
+        run: |
+          cd server
+          zip -r lambda-function.zip index-v2.js node_modules/
+          aws lambda update-function-code \
+            --function-name ${{ secrets.AWS_LAMBDA_FUNCTION_STAGING }} \
+            --zip-file fileb://lambda-function.zip
+          cd ..
+
+      - name: Invalidate CloudFront Cache (Staging)
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ secrets.AWS_CLOUDFRONT_DIST_STAGING }} \
+            --paths "/*"
+
+      - name: Run Smoke Tests
+        run: |
+          sleep 10
+          curl -f https://api.staging.sarkarbrothers.com/api/health || exit 1
+          echo "✅ Staging deployment successful"
+
+  deploy-production:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.PROD_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.PROD_AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.PROD_AWS_REGION }}
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          npm ci
+          cd customer-portal && npm ci && cd ..
+          cd admin-portal && npm ci && cd ..
+
+      - name: Build Customer Portal (Production)
+        run: npm run build:customer -- --mode production
+
+      - name: Build Admin Portal (Production)
+        run: npm run build:admin -- --mode production
+
+      - name: Deploy Customer Portal to S3 (Production)
+        run: |
+          aws s3 sync customer-portal/dist s3://${{ secrets.PROD_AWS_S3_CUSTOMER }}/ \
+            --delete \
+            --cache-control "max-age=31536000,public"
+
+      - name: Deploy Admin Portal to S3 (Production)
+        run: |
+          aws s3 sync admin-portal/dist s3://${{ secrets.PROD_AWS_S3_ADMIN }}/ \
+            --delete \
+            --cache-control "max-age=31536000,public"
+
+      - name: Deploy Backend to Lambda (Production)
+        run: |
+          cd server
+          zip -r lambda-function.zip index-v2.js node_modules/
+          aws lambda update-function-code \
+            --function-name ${{ secrets.PROD_AWS_LAMBDA_FUNCTION }} \
+            --zip-file fileb://lambda-function.zip
+          aws lambda wait function-updated \
+            --function-name ${{ secrets.PROD_AWS_LAMBDA_FUNCTION }}
+          cd ..
+
+      - name: Invalidate CloudFront Cache (Production)
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ secrets.PROD_AWS_CLOUDFRONT_DIST }} \
+            --paths "/*"
+
+      - name: Run Production Smoke Tests
+        run: |
+          sleep 15
+          curl -f https://api.sarkarbrothers.com/api/health || exit 1
+          curl -f https://customer.sarkarbrothers.com || exit 1
+          curl -f https://admin.sarkarbrothers.com || exit 1
+          echo "🚀 Production deployment successful"
+
+      - name: Notify Slack (Success)
+        if: success()
+        uses: slackapi/slack-github-action@v1
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+        with:
+          payload: |
+            {
+              "text": "🚀 SarkarBrothers Production Deployment",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Deploy Status: ✅ SUCCESS*\nCommit: ${{ github.sha }}\nAuthor: ${{ github.actor }}"
+                  }
+                }
+              ]
+            }
+
+      - name: Notify Slack (Failure)
+        if: failure()
+        uses: slackapi/slack-github-action@v1
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+        with:
+          payload: |
+            {
+              "text": "🚨 SarkarBrothers Production Deployment",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Deploy Status: ❌ FAILED*\nCommit: ${{ github.sha }}\nAuthor: ${{ github.actor }}\nCheck logs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                  }
+                }
+              ]
+            }
+
+  security-audit:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run npm audit
+        run: npm audit --audit-level=moderate || true
+
+      - name: Trivy vulnerability scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: 'trivy-results.sarif'

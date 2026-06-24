@@ -8,10 +8,12 @@ import DashboardView from '../components/admin/DashboardView';
 import ProductsView from '../components/admin/ProductsView';
 import OrdersView from '../components/admin/OrdersView';
 import SettingsView from '../components/admin/SettingsView';
+import UsersView from '../components/admin/UsersView';
+import ReportsView from '../components/admin/ReportsView';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
-export type AdminTab = 'dashboard' | 'products' | 'orders' | 'settings';
+export type AdminTab = 'dashboard' | 'products' | 'orders' | 'settings' | 'users' | 'reports';
 
 const Admin: React.FC = () => {
   const { isAuthenticated, role, logout, loading: authLoading, user } = useAuth();
@@ -79,6 +81,8 @@ const Admin: React.FC = () => {
       case 'products': return <ProductsView products={products} onSave={handleSaveProduct} onDelete={handleDeleteProduct} />;
       case 'orders': return <OrdersView orders={orders} onStatusChange={handleOrderStatusChange} />;
       case 'settings': return <SettingsView showToast={showToast} />;
+      case 'users': return <UsersView />;
+      case 'reports': return <ReportsView />;
       default: return null;
     }
   };
@@ -90,11 +94,11 @@ const Admin: React.FC = () => {
         <h1 className="text-xl font-bold ml-2 text-gray-800 dark:text-white">SarkarBrothers</h1>
       </div>
       <nav className="flex-1 px-4 py-4 space-y-2">
-        {(['dashboard', 'products', 'orders', 'settings'] as AdminTab[]).map(tab => (
+        {(['dashboard', 'products', 'orders', 'users', 'reports', 'settings'] as AdminTab[]).map(tab => (
           <button key={tab} onClick={() => { setActiveTab(tab); setSidebarOpen(false); }}
             className={`w-full flex items-center px-4 py-2.5 text-sm font-medium rounded-lg transition-colors ${activeTab === tab ? 'bg-primary/20 text-primary' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}>
             <span className="material-symbols-outlined mr-3">{
-              { dashboard: 'dashboard', products: 'inventory_2', orders: 'receipt_long', settings: 'settings' }[tab]
+              { dashboard: 'dashboard', products: 'inventory_2', orders: 'receipt_long', users: 'group', reports: 'analytics', settings: 'settings' }[tab]
             }</span>
             {tab.charAt(0).toUpperCase() + tab.slice(1)}
           </button>
