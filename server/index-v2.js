@@ -339,9 +339,17 @@ app.post('/api/customer/orders', authenticate, requirePortal(['customer']), asyn
         let orderTotal = 0;
         const orderItems = [];
 
-        for (const item of items) {
-            if (dbConnected) {
-                const product = await Product.findById(item.productId).lean();
+        if (dbConnected) {
+            const productIds = items.map(item => item.productId);
+            const products = await Product.find({ _id: { $in: productIds } }).lean();
+            
+            const productMap = products.reduce((acc, p) => {
+                acc[p._id.toString()] = p;
+                return acc;
+            }, {});
+
+            for (const item of items) {
+                const product = productMap[item.productId];
                 if (!product) return res.status(404).json({ error: `Product not found: ${item.productId}` });
                 if (product.stock < item.quantity) return res.status(400).json({ error: `Insufficient stock for ${product.name}` });
 
@@ -350,7 +358,7 @@ app.post('/api/customer/orders', authenticate, requirePortal(['customer']), asyn
                     name: product.name,
                     price: product.price,
                     quantity: item.quantity,
-                    image: product.image
+                    image: product.image || product.imageUrl
                 });
                 orderTotal += product.price * item.quantity;
             }
@@ -738,17 +746,19 @@ process.on('SIGTERM', () => shutdown('SIGTERM'));
 process.on('SIGINT', () => shutdown('SIGINT'));
 
 // ─── Start Server ──────────────────────────────────────────
-app.listen(PORT, () => {
-    console.log('\n╔════════════════════════════════════════════════╗');
-    console.log('║  SarkarBrothers Dual-Portal API SERVER  ║');
-    console.log('╚════════════════════════════════════════════════╝');
-    console.log(`  Port: ${PORT}`);
-    console.log(`  Environment: ${NODE_ENV}`);
-    console.log(`  MongoDB: ${dbConnected ? '✓ Connected' : '✗ Disconnected'}`);
-    console.log(`  Stripe: ${STRIPE_KEY ? '✓ Configured' : '⚠️  Missing'}`);
-    console.log(`  Gemini AI: ${ai ? '✓ Enabled' : '⚠️  Disabled'}`);
-    console.log(`  Health: http://localhost:${PORT}/api/health`);
-    console.log('');
-});
+if (process.env.NODE_ENV !== 'production' || process.env.RENDER) {
+    app.listen(PORT, () => {
+        console.log('\n╔════════════════════════════════════════════════╗');
+        console.log('║  SarkarBrothers Dual-Portal API SERVER  ║');
+        console.log('╚════════════════════════════════════════════════╝');
+        console.log(`  Port: ${PORT}`);
+        console.log(`  Environment: ${NODE_ENV}`);
+        console.log(`  MongoDB: ${dbConnected ? '✓ Connected' : '✗ Disconnected'}`);
+        console.log(`  Stripe: ${STRIPE_KEY ? '✓ Configured' : '⚠️  Missing'}`);
+        console.log(`  Gemini AI: ${ai ? '✓ Enabled' : '⚠️  Disabled'}`);
+        console.log(`  Health: http://localhost:${PORT}/api/health`);
+        console.log('');
+    });
+}
 
 export default app;

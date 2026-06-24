@@ -46,29 +46,29 @@ const productSchema = new mongoose.Schema({
   description: String,
   specs: Map, // Key-value pairs for specs
   stock: { type: Number, default: 100 },
-  isPublished: { type: Boolean, default: false },
+  isPublished: { type: Boolean, default: false, index: true },
   createdAt: { type: Date, default: Date.now }
 });
 
 // --- Order Schema ---
 const orderItemSchema = new mongoose.Schema({
-  product: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
+  productId: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
+  name: String,
+  price: Number,
   quantity: Number,
-  priceAtPurchase: Number
+  image: String
 });
 
 const orderSchema = new mongoose.Schema({
-  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  customerId: { type: String, required: true, index: true },
+  customerEmail: String,
+  customerName: String,
   items: [orderItemSchema],
   total: Number,
-  status: {
-    type: String,
-    enum: ['Processing', 'Shipped', 'Delivered', 'Cancelled'],
-    default: 'Processing'
-  },
+  status: { type: String, default: 'pending' },
+  paymentStatus: { type: String, default: 'pending' },
+  stripePaymentIntentId: { type: String, index: true },
   shippingAddress: addressSchema,
-  paymentMethod: String,
-  paymentId: String,
   createdAt: { type: Date, default: Date.now }
 });
 
