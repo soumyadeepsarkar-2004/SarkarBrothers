@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import {
-    CardElement,
+    PaymentElement,
     useStripe,
     useElements,
 } from '@stripe/react-stripe-js';
@@ -39,35 +39,28 @@ export default function CheckoutForm({
         setError(null);
 
         try {
-            // Confirm payment with Stripe
-            const { error: stripeError, paymentIntent } = await stripe.confirmCardPayment(
-                clientSecret,
-                {
-                    payment_method: {
-                        card: elements.getElement(CardElement)!,
-                        billing_details: {
-                            name: 'Customer', // Could be from user context
-                        },
-                    },
-                }
-            );
+            // Confirm payment with Stripe Universal PaymentElement
+            const { error: stripeError } = await stripe.confirmPayment({
+                elements,
+                confirmParams: {
+                    return_url: window.location.origin + '/#/profile?order_success=true',
+                },
+            });
 
+            // This point will only be reached if there is an immediate error when
+            // confirming the payment. Otherwise, your customer will be redirected to
+            // your `return_url`. For some payment methods like iDEAL, your customer will
+            // be redirected to an intermediate site first to authorize the payment, then
+            // redirected to the `return_url`.
             if (stripeError) {
                 setError(stripeError.message || 'Payment failed');
                 onError?.(stripeError.message || 'Payment failed');
                 return;
             }
 
-            if (paymentIntent?.status === 'succeeded') {
-                // Confirm payment on backend
-                await confirmPayment(paymentIntent.id);
-                onSuccess?.(paymentIntent.id);
-                setError(null);
-            } else if (paymentIntent?.status === 'processing') {
-                setError('Payment is processing. Please wait...');
-            } else {
-                setError(`Unexpected payment status: ${paymentIntent?.status}`);
-            }
+            // If we reach here and it didn't redirect, it means success (for non-redirect payment methods)
+            onSuccess?.(orderId);
+            setError(null);
         } catch (err) {
             const errorMsg = err instanceof Error ? err.message : 'Payment processing failed';
             setError(errorMsg);
@@ -90,25 +83,9 @@ export default function CheckoutForm({
 
     return (
         <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Card Element */}
+            {/* Universal Payment Element */}
             <div className="border rounded-lg p-4 bg-white">
-                <label className="block text-sm font-medium mb-2">Card Details</label>
-                <CardElement
-                    options={{
-                        style: {
-                            base: {
-                                fontSize: '16px',
-                                color: '#424770',
-                                '::placeholder': {
-                                    color: '#aab7c4',
-                                },
-                            },
-                            invalid: {
-                                color: '#fa755a',
-                            },
-                        },
-                    }}
-                />
+                <PaymentElement />
             </div>
 
             {/* Error Message */}

@@ -21,7 +21,7 @@ import { CartProvider } from './contexts/CartContext';
 import { WishlistProvider } from './contexts/WishlistContext';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { AuthProvider } from './contexts/AuthContext';
-import StripeProvider from './contexts/StripeProvider';
+
 
 import ShippingReturns from './pages/ShippingReturns';
 import PrivacyPolicy from './pages/PrivacyPolicy';
@@ -84,11 +84,10 @@ const InstallBanner = () => {
 const App: React.FC = () => {
   return (
     <LanguageProvider>
-      <StripeProvider>
-        <CartProvider>
-          <WishlistProvider>
-            <AuthProvider>
-              <HashRouter>
+      <CartProvider>
+        <WishlistProvider>
+          <AuthProvider>
+            <HashRouter>
                 <ScrollToTop />
                 <div className="flex flex-col min-h-screen">
                   <Navbar />
@@ -113,11 +112,10 @@ const App: React.FC = () => {
                   </Routes>
                   <ConditionalFooter />
                 </div>
-              </HashRouter>
-            </AuthProvider>
-          </WishlistProvider>
-        </CartProvider>
-      </StripeProvider>
+            </HashRouter>
+          </AuthProvider>
+        </WishlistProvider>
+      </CartProvider>
     </LanguageProvider>
   );
 };

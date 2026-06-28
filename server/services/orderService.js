@@ -58,6 +58,7 @@ export const createCustomerOrder = async ({ items, shippingAddress, user, dbConn
         const paymentIntent = await stripe.paymentIntents.create({
             amount: Math.round(verifiedTotal * 100), // cents
             currency: 'inr',
+            automatic_payment_methods: { enabled: true },
             metadata: { customerId: user.id, email: user.email }
         });
 
@@ -89,6 +90,7 @@ export const createCustomerOrder = async ({ items, shippingAddress, user, dbConn
         const paymentIntent = await stripe.paymentIntents.create({
             amount: Math.round(orderTotal * 100),
             currency: 'inr',
+            automatic_payment_methods: { enabled: true },
             metadata: { customerId: user.id, email: user.email }
         });
         clientSecret = paymentIntent.client_secret;

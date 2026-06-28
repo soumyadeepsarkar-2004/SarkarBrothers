@@ -8,6 +8,9 @@ import { Product } from '../types';
 import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext'; // Relative import
 import CheckoutForm from '../components/CheckoutForm';
+import { Elements } from '@stripe/react-stripe-js';
+import { getStripe } from '../services/stripeService';
+import type { Stripe } from '@stripe/stripe-js';
 
 const Cart: React.FC = () => {
   const { items, updateQuantity, removeFromCart, cartTotal, addToCart, clearCart } = useCart();
@@ -19,9 +22,11 @@ const Cart: React.FC = () => {
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [paymentProcessing, setPaymentProcessing] = useState(false);
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
+  const [stripePromise, setStripePromise] = useState<Promise<Stripe | null> | null>(null);
 
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), 500);
+    setStripePromise(getStripe());
     return () => clearTimeout(timer);
   }, []);
 
@@ -90,13 +95,15 @@ const Cart: React.FC = () => {
                             <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
                             <p className="text-[#8a8060]">Initializing secure payment...</p>
                         </div>
-                    ) : clientSecret && orderId ? (
-                        <CheckoutForm 
-                            clientSecret={clientSecret} 
-                            orderId={orderId} 
-                            amount={total} 
-                            onSuccess={handlePaymentSuccess} 
-                        />
+                    ) : clientSecret && orderId && stripePromise ? (
+                        <Elements stripe={stripePromise} options={{ clientSecret }}>
+                            <CheckoutForm 
+                                clientSecret={clientSecret} 
+                                orderId={orderId} 
+                                amount={total} 
+                                onSuccess={handlePaymentSuccess} 
+                            />
+                        </Elements>
                     ) : (
                         <div className="text-center text-red-500 py-8">
                             <p>Failed to load payment form.</p>
