@@ -8,6 +8,8 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { formatPrice } from '../utils/formatters';
 import { Product } from '../types';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import LoginModal from '../components/LoginModal';
 
 interface Message {
     role: 'bot' | 'user';
@@ -24,6 +26,8 @@ const AiAssistant: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const { addToCart } = useCart();
     const { t, language } = useLanguage();
+    const { isAuthenticated } = useAuth();
+    const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 
     const [messages, setMessages] = useState<Message[]>([
         { role: 'bot', text: t('ai.intro') }
@@ -98,45 +102,28 @@ const AiAssistant: React.FC = () => {
     };
 
     const findRelevantProducts = (responseText: string): { topMatches: Product[], related: Product[] } => {
-        const normalizedText = responseText.toLowerCase();
-
-        // Extract potential keywords (simple stop word removal)
-        const keywords = normalizedText.split(/[\s,.]+/).filter(w => w.length > 3 && !['gift', 'toys', 'looking', 'want', 'recommend', 'need', 'please'].includes(w));
+        const text = responseText.toLowerCase();
 
         const scoredProducts = products.map(p => {
             let score = 0;
-            const pName = p.name.toLowerCase();
-            const pCat = p.category.toLowerCase();
-            const pDesc = p.description?.toLowerCase() || "";
 
-            // 1. Direct Mention (Highest weight)
-            if (normalizedText.includes(pName)) score += 50;
+            const categoryMatch = p.category && text.includes(p.category.toLowerCase());
+            const nameMatch = p.name && text.includes(p.name.toLowerCase());
+            const keywords = (p.description || '').toLowerCase() + ' ' + p.name.toLowerCase();
 
-            // 2. Category Match
-            if (normalizedText.includes(pCat)) score += 20;
+            if (categoryMatch) score += 20;
+            if (nameMatch) score += 40;
 
-            // 3. Keyword Overlap
-            keywords.forEach(k => {
-                if (pName.includes(k)) score += 10;
-                if (pCat.includes(k)) score += 5;
-                if (pDesc.includes(k)) score += 2;
+            // Simple token matches
+            const tokens = text.split(/\s+/);
+            tokens.forEach(tok => {
+                if (tok.length > 2 && keywords.includes(tok)) score += 2;
             });
 
-            // 4. Product Quality Factors (NEW: Consider ratings and stock)
-            // High rating boost (4.5+ stars get bonus)
-            if (p.rating >= 4.5) score += 15;
-            else if (p.rating >= 4.0) score += 10;
-            else if (p.rating >= 3.5) score += 5;
+            // Adjust by popularity / reviews
+            score += (p.rating * (p.reviews || 1)) / 100;
 
-            // Review count indicates popularity
-            score += (p.reviews || 0) * 0.05;
-
-            // Stock availability (NEW: Prioritize in-stock items)
-            if (p.stock && p.stock > 10) score += 10; // Good stock
-            else if (p.stock && p.stock > 0) score += 5; // Low stock
-            else if (!p.stock || p.stock === 0) score *= 0.3; // Out of stock - heavily penalize
-
-            // 5. Personalization from Feedback
+            // Prioritize feedback
             if (feedback[p.id] === 'like') score *= 1.5;
             if (feedback[p.id] === 'dislike') score *= 0.5;
 
@@ -164,6 +151,10 @@ const AiAssistant: React.FC = () => {
     };
 
     const handleSend = async (text: string = input) => {
+        if (!isAuthenticated) {
+            setIsLoginModalOpen(true);
+            return;
+        }
         if (!text.trim() || loading) return;
 
         const userMessage = text;
@@ -429,6 +420,26 @@ const AiAssistant: React.FC = () => {
 
             {/* Input Area + Recommendations */}
             <div className="bg-white dark:bg-[#1a1a1a] border-t border-[#f0eee9] dark:border-[#333] relative z-20">
+                {!isAuthenticated && (
+                    <div className="absolute inset-0 bg-white/75 dark:bg-[#1a1a1a]/90 backdrop-blur-md z-30 flex flex-col items-center justify-center p-6 text-center">
+                        <div className="max-w-md space-y-4">
+                            <div className="size-14 rounded-2xl bg-primary/20 text-primary border border-primary/30 flex items-center justify-center mx-auto animate-pulse">
+                                <span className="material-symbols-outlined text-3xl">lock</span>
+                            </div>
+                            <h3 className="text-lg font-bold text-[#181611] dark:text-white">Unlock AI Shopping Assistant</h3>
+                            <p className="text-xs text-[#8a8060] dark:text-gray-400">
+                                Log in or create a free account to chat with GiftBot, get personalized toy recommendations, and check out securely.
+                            </p>
+                            <button
+                                onClick={() => setIsLoginModalOpen(true)}
+                                className="bg-primary hover:bg-[#e5b31f] text-[#181611] text-xs font-bold px-5 py-2.5 rounded-xl shadow-md transition-all active:scale-95 transform flex items-center gap-1.5 mx-auto"
+                            >
+                                <span className="material-symbols-outlined text-[16px]">login</span>
+                                Log In / Sign Up
+                            </button>
+                        </div>
+                    </div>
+                )}
 
                 {/* Recommendations Carousel */}
                 {recommendations.length > 0 && (
@@ -488,6 +499,9 @@ const AiAssistant: React.FC = () => {
 
             {/* Quick View Modal */}
             <QuickViewModal />
+
+            {/* Login Prompt Modal */}
+            <LoginModal isOpen={isLoginModalOpen} onClose={() => setIsLoginModalOpen(false)} />
         </div>
     );
 };

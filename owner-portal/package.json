@@ -1,5 +1,5 @@
 {
-    "name": "sarkarbrothers-customer-portal",
+    "name": "sarkarbrothers-admin-portal",
     "version": "1.0.0",
     "type": "module",
     "scripts": {
@@ -8,10 +8,10 @@
         "preview": "vite preview"
     },
     "dependencies": {
-        "@stripe/react-stripe-js": "^2.7.0",
-        "@stripe/stripe-js": "^4.4.0",
         "axios": "^1.7.0",
+        "chart.js": "^4.4.1",
         "react": "^18.3.0",
+        "react-chartjs-2": "^5.2.0",
         "react-dom": "^18.3.0",
         "react-router-dom": "^7.0.0"
     },

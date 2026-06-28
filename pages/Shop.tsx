@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { api, getHistory } from '../services/api';
 import { useCart } from '../contexts/CartContext';
@@ -9,6 +9,7 @@ import { formatPrice } from '../utils/formatters';
 import { Product } from '../types';
 import LoadingToy from '../components/LoadingToy';
 import LazyImage from '../components/LazyImage';
+import { useSEO } from '../hooks/useSEO';
 
 const PRICE_RANGES = [
   { label: 'Under ₹2000', min: 0, max: 2000 },
@@ -35,6 +36,11 @@ const Shop: React.FC = () => {
   const { addToCart } = useCart();
   const { toggleWishlist, isInWishlist } = useWishlist();
   const { t } = useLanguage();
+
+  useSEO({
+    title: initialSearch ? `Search: ${initialSearch}` : 'Shop Toys',
+    description: 'Browse our collection of magical toys. Filter by category, price, and discover the best for your kids.'
+  });
 
   // Fetch Products via Service
   useEffect(() => {

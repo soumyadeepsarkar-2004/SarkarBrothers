@@ -4,7 +4,7 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
     plugins: [react()],
     server: {
-        port: 3001,
+        port: 3002,
         proxy: {
             '/api': {
                 target: 'http://localhost:5000',
@@ -24,8 +24,8 @@ export default defineConfig({
                         if (id.includes('react')) {
                             return 'react-vendor';
                         }
-                        if (id.includes('stripe')) {
-                            return 'stripe-vendor';
+                        if (id.includes('chart')) {
+                            return 'chart-vendor';
                         }
                         return 'vendor';
                     }

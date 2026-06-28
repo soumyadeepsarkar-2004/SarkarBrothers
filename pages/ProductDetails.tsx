@@ -10,6 +10,7 @@ import { formatPrice } from '../utils/formatters';
 import { saveToHistory } from '../services/api';
 import LoadingToy from '../components/LoadingToy';
 import LazyImage from '../components/LazyImage';
+import { useSEO } from '../hooks/useSEO';
 
 // Mock reviews data
 const MOCK_REVIEWS = [
@@ -28,6 +29,12 @@ const ProductDetails: React.FC = () => {
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  // Set SEO metadata dynamically
+  useSEO({
+    title: product ? product.name : 'Product Details',
+    description: product ? `Buy ${product.name} - ${product.category}. Shop best toys at SarkarBrothers.` : 'Product details page.',
+  });
 
   useEffect(() => {
     window.scrollTo(0, 0);

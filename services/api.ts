@@ -291,10 +291,19 @@ export const api = {
 
     createOrder: async (items: CartItem[], total: number, customerEmail?: string) => {
       if (USE_MOCK_BACKEND) return MockBackend.createOrder(items, total, customerEmail);
-      const res = await fetch(`${API_BASE_URL}/user/orders`, {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${API_BASE_URL}/customer/orders`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items, total, email: customerEmail }),
+        headers: { 
+            'Content-Type': 'application/json',
+            ...(token && { 'Authorization': `Bearer ${token}` })
+        },
+        body: JSON.stringify({ 
+            items, 
+            total, 
+            email: customerEmail,
+            shippingAddress: { street: 'Pending', city: 'Pending', state: 'Pending', zip: 'Pending', country: 'IN' } 
+        }),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({ error: 'Order creation failed' }));

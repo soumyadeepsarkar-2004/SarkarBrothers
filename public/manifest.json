@@ -1,0 +1,21 @@
+{
+  "name": "Sarkar Brothers Toy Store",
+  "short_name": "Sarkar Brothers",
+  "description": "Unwrap the Magic of Play - Premium Child-Safe Toys and Custom Plushies",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f8f8f5",
+  "theme_color": "#f4c025",
+  "icons": [
+    {
+      "src": "/image.svg",
+      "type": "image/svg+xml",
+      "sizes": "any"
+    },
+    {
+      "src": "/image.svg",
+      "type": "image/svg+xml",
+      "sizes": "192x192 512x512"
+    }
+  ]
+}

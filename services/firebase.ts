@@ -7,6 +7,12 @@ import {
     onAuthStateChanged,
     Auth,
     User as FirebaseUser,
+    signInWithEmailAndPassword,
+    createUserWithEmailAndPassword,
+    updateProfile,
+    signInWithPhoneNumber,
+    RecaptchaVerifier,
+    ConfirmationResult
 } from 'firebase/auth';
 
 // Firebase config from environment variables (set in vite.config.ts define)
@@ -74,4 +80,34 @@ export const onFirebaseAuthChanged = (callback: (user: FirebaseUser | null) => v
     return onAuthStateChanged(auth, callback);
 };
 
-export type { FirebaseUser };
+// --- Real Email & Password Auth ---
+export const loginWithEmailAndPassword = async (email: string, password: string): Promise<FirebaseUser> => {
+    if (!auth) throw new Error('Firebase is not configured.');
+    const result = await signInWithEmailAndPassword(auth, email, password);
+    return result.user;
+};
+
+export const signUpWithEmailAndPassword = async (email: string, password: string, name: string): Promise<FirebaseUser> => {
+    if (!auth) throw new Error('Firebase is not configured.');
+    const result = await createUserWithEmailAndPassword(auth, email, password);
+    await updateProfile(result.user, { displayName: name });
+    return result.user;
+};
+
+// --- Real Phone OTP Verification ---
+export const setupRecaptcha = (containerId: string): RecaptchaVerifier => {
+    if (!auth) throw new Error('Firebase is not configured.');
+    return new RecaptchaVerifier(auth, containerId, {
+        size: 'invisible',
+        callback: () => {
+            // reCAPTCHA solved, allow signInWithPhoneNumber
+        }
+    });
+};
+
+export const startPhoneVerification = async (phoneNumber: string, verifier: RecaptchaVerifier): Promise<ConfirmationResult> => {
+    if (!auth) throw new Error('Firebase is not configured.');
+    return signInWithPhoneNumber(auth, phoneNumber, verifier);
+};
+
+export type { FirebaseUser, ConfirmationResult, RecaptchaVerifier };

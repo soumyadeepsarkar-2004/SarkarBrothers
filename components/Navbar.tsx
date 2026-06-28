@@ -262,10 +262,7 @@ const Navbar: React.FC = () => {
 
             {/* Logo */}
             <Link to="/" className="flex items-center gap-2 shrink-0">
-              <div className="size-8 text-primary">
-                <span className="material-symbols-outlined" style={{ fontSize: '32px', fontVariationSettings: "'FILL' 1" }}>toys</span>
-              </div>
-              <h2 className="text-[#181611] dark:text-white text-xl font-bold tracking-tight hidden sm:block">SarkarBrothers</h2>
+              <img src="/image.svg" alt="Sarkar Brothers Logo" className="h-12 w-auto object-contain" />
             </Link>
 
             {/* Search Bar (Desktop) */}

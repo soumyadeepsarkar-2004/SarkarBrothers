@@ -7,6 +7,7 @@ import { formatPrice } from '../utils/formatters';
 import { Product } from '../types';
 import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext'; // Relative import
+import CheckoutForm from '../components/CheckoutForm';
 
 const Cart: React.FC = () => {
   const { items, updateQuantity, removeFromCart, cartTotal, addToCart, clearCart } = useCart();
@@ -24,7 +25,7 @@ const Cart: React.FC = () => {
     return () => clearTimeout(timer);
   }, []);
 
-  const shipping = cartTotal > 2000 ? 0 : 100;
+  const shipping = cartTotal > 499 ? 0 : 100;
   const total = cartTotal + shipping;
 
   const handleRemoveItem = (id: string, name: string) => {
@@ -33,67 +34,74 @@ const Cart: React.FC = () => {
       }
   };
 
-  const handlePaymentConfirmation = async () => {
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [orderId, setOrderId] = useState<string | null>(null);
+
+  const handleProceedToPayment = async () => {
     if (!isAuthenticated || !user?.email) {
       alert("Please log in to complete your order.");
-      navigate('/profile'); // Redirect to profile/login if not authenticated
+      navigate('/profile');
       return;
     }
-
+    
     setPaymentProcessing(true);
+    setIsPaymentModalOpen(true);
     try {
-        // Pass the customer email to the createOrder API
-        await api.user.createOrder(items, total, user.email);
-        clearCart();
-        setIsPaymentModalOpen(false);
-        navigate('/profile?order_success=true');
+        const response = await api.user.createOrder(items, total, user.email);
+        
+        // The backend returns { order: { ... }, paymentIntent: { clientSecret: '...' } }
+        if (response.paymentIntent?.clientSecret) {
+            setClientSecret(response.paymentIntent.clientSecret);
+            setOrderId(response.order._id || response.order.id);
+        } else {
+            throw new Error("Missing clientSecret in response");
+        }
     } catch (e) {
-        console.error("Failed to create order", e);
-        alert("There was an issue processing your order. Please try again.");
+        console.error("Failed to initialize payment", e);
+        setIsPaymentModalOpen(false);
+        alert("There was an issue starting your payment. Please try again.");
     } finally {
         setPaymentProcessing(false);
     }
+  };
+
+  const handlePaymentSuccess = () => {
+      clearCart();
+      setIsPaymentModalOpen(false);
+      navigate('/profile?order_success=true');
   };
 
   const PaymentModal = () => {
       if (!isPaymentModalOpen) return null;
 
       return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" onClick={() => !paymentProcessing && setIsPaymentModalOpen(false)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" onClick={() => !clientSecret && setIsPaymentModalOpen(false)}>
             <div className="bg-white dark:bg-[#1f1b13] rounded-2xl max-w-md w-full overflow-hidden shadow-2xl animate-[fadeIn_0.2s_ease-out] border-4 border-primary/50" onClick={e => e.stopPropagation()}>
-                <div className="p-6 text-center">
-                    <h2 className="text-xl font-bold text-[#181611] dark:text-white">Complete Your Payment</h2>
-                    <p className="text-sm text-[#8a8060] mt-1">Scan the QR with any UPI app</p>
-                    <div className="my-6 flex flex-col items-center gap-4">
-                        <div className="p-4 bg-white rounded-lg border-2 border-dashed border-gray-300">
-                           <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuDBM4R_ngBzCjy-ypr-KT0s7lT6L-j8bHy7LAVX_exqSbi2TqL_2XQvW8U3N9X6f-t8m_wJ-C0yOQ1p116-vF-4A9VlP6TjQJ9PjQYxK85r00s90yFp510p_E-dJ960y2Q876Q3lQj3t-0iC9k_lq9J-M6lB8x9o2Gg" alt="UPI QR Code" className="w-48 h-48" />
-                        </div>
-                        <div className="bg-[#f5f3f0] dark:bg-[#2a261a] w-full p-3 rounded-lg">
-                            <span className="text-sm text-[#8a8060]">Amount to Pay</span>
-                            <p className="text-3xl font-extrabold text-[#181611] dark:text-white tracking-tighter">{formatPrice(total)}</p>
-                        </div>
+                <div className="p-6">
+                    <div className="flex justify-between items-center mb-6">
+                        <h2 className="text-xl font-bold text-[#181611] dark:text-white">Secure Checkout</h2>
+                        <button onClick={() => setIsPaymentModalOpen(false)} className="text-gray-400 hover:text-red-500">
+                            <span className="material-symbols-outlined">close</span>
+                        </button>
                     </div>
 
-                    <div className="flex flex-col gap-3">
-                         <button 
-                            onClick={handlePaymentConfirmation}
-                            disabled={paymentProcessing}
-                            className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2 disabled:bg-gray-400"
-                        >
-                            {paymentProcessing ? (
-                                <>
-                                 <span className="material-symbols-outlined animate-spin text-lg">progress_activity</span>
-                                 <span>Processing...</span>
-                                </>
-                            ) : (
-                                <>
-                                 <span className="material-symbols-outlined">verified</span>
-                                 <span>I have paid, Confirm Order</span>
-                                </>
-                            )}
-                        </button>
-                        <button onClick={() => setIsPaymentModalOpen(false)} disabled={paymentProcessing} className="text-sm text-[#8a8060] font-bold hover:text-red-500">Cancel</button>
-                    </div>
+                    {paymentProcessing && !clientSecret ? (
+                        <div className="flex flex-col items-center py-8 gap-4">
+                            <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+                            <p className="text-[#8a8060]">Initializing secure payment...</p>
+                        </div>
+                    ) : clientSecret && orderId ? (
+                        <CheckoutForm 
+                            clientSecret={clientSecret} 
+                            orderId={orderId} 
+                            amount={total} 
+                            onSuccess={handlePaymentSuccess} 
+                        />
+                    ) : (
+                        <div className="text-center text-red-500 py-8">
+                            <p>Failed to load payment form.</p>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
@@ -199,7 +207,7 @@ const Cart: React.FC = () => {
                     </div>
                    <div className="p-6 bg-slate-50 dark:bg-slate-800/30">
                      <button 
-                         onClick={() => setIsPaymentModalOpen(true)}
+                         onClick={handleProceedToPayment}
                          disabled={items.length === 0}
                          className="w-full bg-primary hover:bg-yellow-400 disabled:bg-slate-300 disabled:cursor-not-allowed text-slate-900 font-bold py-4 rounded-xl shadow-lg shadow-primary/20 transition-all transform active:scale-95 flex justify-center items-center gap-2 text-lg"
                      >

@@ -6,6 +6,8 @@ import { products } from '../data';
 import { Link } from 'react-router-dom';
 import { formatPrice } from '../utils/formatters';
 import { Product } from '../types';
+import { useAuth } from '../contexts/AuthContext';
+import LoginModal from '../components/LoginModal';
 
 interface Message {
     role: 'user' | 'assistant';
@@ -15,6 +17,8 @@ interface Message {
 }
 
 const VoiceAssistant: React.FC = () => {
+    const { isAuthenticated } = useAuth();
+    const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
     const { t, language } = useLanguage();
     const { addToCart } = useCart();
     const [messages, setMessages] = useState<Message[]>([]);
@@ -84,6 +88,10 @@ const VoiceAssistant: React.FC = () => {
     }, []);
 
     const startRecording = async () => {
+        if (!isAuthenticated) {
+            setIsLoginModalOpen(true);
+            return;
+        }
         try {
             setError(null);
 
@@ -162,6 +170,10 @@ const VoiceAssistant: React.FC = () => {
     };
 
     const processUserInput = async (text: string) => {
+        if (!isAuthenticated) {
+            setIsLoginModalOpen(true);
+            return;
+        }
         if (!text.trim()) return;
 
         const userMessage: Message = {
@@ -208,6 +220,10 @@ const VoiceAssistant: React.FC = () => {
 
     const handleTextSubmit = (e?: React.FormEvent) => {
         e?.preventDefault();
+        if (!isAuthenticated) {
+            setIsLoginModalOpen(true);
+            return;
+        }
         if (textInput.trim() && !isLoading) {
             processUserInput(textInput.trim());
             setTextInput('');
@@ -399,7 +415,28 @@ const VoiceAssistant: React.FC = () => {
             )}
 
             {/* Recording Controls & Text Input */}
-            <div className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-4 py-6 shadow-lg">
+            <div className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-4 py-6 shadow-lg relative overflow-hidden">
+                {!isAuthenticated && (
+                    <div className="absolute inset-0 bg-white/75 dark:bg-gray-800/90 backdrop-blur-md z-30 flex flex-col items-center justify-center p-6 text-center">
+                        <div className="max-w-md space-y-4">
+                            <div className="size-14 rounded-2xl bg-primary/20 text-primary border border-primary/30 flex items-center justify-center mx-auto animate-pulse">
+                                <span className="material-symbols-outlined text-3xl">lock</span>
+                            </div>
+                            <h3 className="text-lg font-bold text-[#181611] dark:text-white">Unlock Voice Assistant</h3>
+                            <p className="text-xs text-[#8a8060] dark:text-gray-400">
+                                Log in or create a free account to speak with our AI shopping assistant and get instant recommendations.
+                            </p>
+                            <button
+                                onClick={() => setIsLoginModalOpen(true)}
+                                className="bg-primary hover:bg-[#e5b31f] text-[#181611] text-xs font-bold px-5 py-2.5 rounded-xl shadow-md transition-all active:scale-95 transform flex items-center gap-1.5 mx-auto"
+                            >
+                                <span className="material-symbols-outlined text-[16px]">login</span>
+                                Log In / Sign Up
+                            </button>
+                        </div>
+                    </div>
+                )}
+
                 <div className="max-w-4xl mx-auto">
                     {/* Current Transcript */}
                     {currentTranscript && (
@@ -466,6 +503,9 @@ const VoiceAssistant: React.FC = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Login Prompt Modal */}
+            <LoginModal isOpen={isLoginModalOpen} onClose={() => setIsLoginModalOpen(false)} />
         </div>
     );
 };

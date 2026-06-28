@@ -1,10 +1,10 @@
-
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { products } from '../data';
 import { useCart } from '../contexts/CartContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { formatPrice } from '../utils/formatters';
+import { useSEO } from '../hooks/useSEO';
 
 // VideoModal Component
 const VideoModal: React.FC<{ isOpen: boolean; onClose: () => void; videoUrl: string }> = ({ isOpen, onClose, videoUrl }) => {
@@ -64,6 +64,11 @@ const Home: React.FC = () => {
   const { addToCart } = useCart();
   const { t } = useLanguage();
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
+
+  useSEO({
+    title: 'Unwrap the Magic of Play',
+    description: 'Welcome to SarkarBrothers. Find the best educational toys, custom plushies, and robotic playsets for your kids.'
+  });
 
   // Mock YouTube video URL changed to a generic toy video for reliable embedding
   const VIDEO_URL = "https://www.youtube.com/embed/y-M2a8rW22Y"; // Generic Kids Toy Review/Animation
@@ -191,7 +196,7 @@ const Home: React.FC = () => {
               <span className="material-symbols-outlined text-3xl">local_shipping</span>
             </div>
             <h3 className="font-bold text-lg">{t('product.free_shipping')}</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Free shipping on orders over ₹2000.</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Free shipping on orders over ₹499.</p>
           </div>
           <div className="flex flex-col items-center gap-3">
             <div className="p-4 bg-primary/10 rounded-full text-primary">
@@ -206,6 +211,81 @@ const Home: React.FC = () => {
             </div>
             <h3 className="font-bold text-lg">Secure Payment</h3>
             <p className="text-sm text-gray-500 dark:text-gray-400">100% secure payment processing.</p>
+          </div>
+        </div>
+      </section>
+
+      {/* Store Location Section */}
+      <section className="py-16 bg-white dark:bg-[#1a1811] border-t border-gray-200 dark:border-gray-800">
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col lg:flex-row items-center gap-12">
+            
+            {/* Contact & Info Panel */}
+            <div className="flex-1 space-y-6">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-yellow-700 dark:text-yellow-400 text-xs font-bold uppercase tracking-wider">
+                <span className="material-symbols-outlined text-sm">location_on</span>
+                Our Store
+              </div>
+              <h2 className="text-4xl font-extrabold text-[#181611] dark:text-white tracking-tight">
+                Visit Sarkar Brothers
+              </h2>
+              <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
+                Step into our magical toy world! We are located in the heart of Kalyani, West Bengal. Come explore our wide selection of educational toys, custom plushies, and robotic playsets in person.
+              </p>
+              
+              <div className="space-y-4 pt-2">
+                <div className="flex items-start gap-3">
+                  <span className="material-symbols-outlined text-primary text-xl mt-0.5">pin_drop</span>
+                  <div>
+                    <h4 className="font-bold text-[#181611] dark:text-white text-sm">Address</h4>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Shop No. 253, A-2 Market, Block A2, Block A, Kalyani, West Bengal 741235</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start gap-3">
+                  <span className="material-symbols-outlined text-primary text-xl mt-0.5">schedule</span>
+                  <div>
+                    <h4 className="font-bold text-[#181611] dark:text-white text-sm">Opening Hours</h4>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">09:30 AM - 09:30 PM (Monday - Sunday)</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <span className="material-symbols-outlined text-primary text-xl mt-0.5">call</span>
+                  <div>
+                    <h4 className="font-bold text-[#181611] dark:text-white text-sm">Contact Phone</h4>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">+91 72785 70727</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-4">
+                <a
+                  href="https://maps.app.goo.gl/pbeYxJJopAeXJLpU8"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary hover:bg-yellow-400 text-[#181611] font-bold text-sm shadow-md shadow-yellow-500/10 transition-all hover:-translate-y-0.5 active:translate-y-0"
+                >
+                  <span className="material-symbols-outlined text-sm">directions</span>
+                  Get Directions on Maps
+                </a>
+              </div>
+            </div>
+
+            {/* Embedded Google Map */}
+            <div className="flex-1 w-full aspect-[4/3] min-h-[350px] lg:min-h-[400px] rounded-3xl overflow-hidden shadow-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 relative">
+              <iframe 
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3673.367937880727!2d88.46095707599984!3d22.97349371815648!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x39f8955812a8d587%3A0x82e90e8d54534b67!2sSarkar%20brothers!5e0!3m2!1sen!2sin!4v1782588829466!5m2!1sen!2sin" 
+                width="100%" 
+                height="100%" 
+                style={{ border: 0 }} 
+                allowFullScreen={true}
+                loading="lazy" 
+                referrerPolicy="strict-origin-when-cross-origin"
+                title="Sarkar Brothers Location Map"
+              ></iframe>
+            </div>
+
           </div>
         </div>
       </section>

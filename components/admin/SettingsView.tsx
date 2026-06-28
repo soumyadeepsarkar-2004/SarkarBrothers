@@ -9,8 +9,8 @@ const SettingsView: React.FC<SettingsViewProps> = ({ showToast }) => {
     const [storeInfo, setStoreInfo] = useState({
         name: "SarkarBrothers",
         email: 'contact@sarkarbrothers.com',
-        phone: '+91 98765 43210',
-        address: '123 Fun Lane, Joyville',
+        phone: '+91 72785 70727',
+        address: 'Shop No. 253, A-2 Market, Block A2, Block A, Kalyani, West Bengal 741235',
     });
 
     const [isDarkMode, setIsDarkMode] = useState(() => localStorage.getItem('adminTheme') === 'dark');

@@ -4,6 +4,8 @@
 
 import { loadStripe, Stripe } from '@stripe/stripe-js';
 
+const API_BASE_URL = process.env.API_BASE_URL || '/api';
+
 let stripePromise: Promise<Stripe | null>;
 
 /**
@@ -53,7 +55,7 @@ export const createPaymentIntent = async (
 ): Promise<PaymentIntentResponse> => {
     const token = localStorage.getItem('token');
 
-    const response = await fetch('/api/payments/create-intent', {
+    const response = await fetch(`${API_BASE_URL}/payments/create-intent`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -84,7 +86,7 @@ export const confirmPayment = async (
 ): Promise<PaymentStatus> => {
     const token = localStorage.getItem('token');
 
-    const response = await fetch('/api/payments/confirm', {
+    const response = await fetch(`${API_BASE_URL}/payments/confirm`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -109,7 +111,7 @@ export const getPaymentDetails = async (
 ): Promise<any> => {
     const token = localStorage.getItem('token');
 
-    const response = await fetch(`/api/payments/intent/${paymentIntentId}`, {
+    const response = await fetch(`${API_BASE_URL}/payments/intent/${paymentIntentId}`, {
         method: 'GET',
         headers: {
             'Content-Type': 'application/json',
@@ -134,7 +136,7 @@ export const refundPayment = async (
 ): Promise<any> => {
     const token = localStorage.getItem('token');
 
-    const response = await fetch('/api/payments/refund', {
+    const response = await fetch(`${API_BASE_URL}/payments/refund`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -160,7 +162,7 @@ export const getPaymentHistory = async (
 ): Promise<any[]> => {
     const token = localStorage.getItem('token');
 
-    const response = await fetch(`/api/payments/customer/${customerId}?limit=${limit}`, {
+    const response = await fetch(`${API_BASE_URL}/payments/customer/${customerId}?limit=${limit}`, {
         method: 'GET',
         headers: {
             'Content-Type': 'application/json',

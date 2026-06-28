@@ -89,9 +89,8 @@ const Admin: React.FC = () => {
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
-      <div className="flex items-center justify-center h-20 border-b dark:border-gray-700 shrink-0">
-        <span className="material-symbols-outlined text-primary text-3xl">toys</span>
-        <h1 className="text-xl font-bold ml-2 text-gray-800 dark:text-white">SarkarBrothers</h1>
+      <div className="flex items-center justify-center h-20 border-b dark:border-gray-700 shrink-0 px-4">
+        <img src="/image.svg" alt="Sarkar Brothers Logo" className="h-14 w-auto object-contain dark:bg-white dark:p-1 dark:rounded-md" />
       </div>
       <nav className="flex-1 px-4 py-4 space-y-2">
         {(['dashboard', 'products', 'orders', 'users', 'reports', 'settings'] as AdminTab[]).map(tab => (

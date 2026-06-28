@@ -46,7 +46,7 @@ ${PRODUCT_CATALOG}
 CATEGORIES: Educational, Outdoor Fun, Plushies, Arts & Crafts, Robots, Gifts
 
 SHOP POLICIES:
-- Free shipping on orders above ₹2,000
+- Free shipping on orders above ₹499
 - Standard delivery: 3-5 business days
 - Easy returns within 7 days
 - Safe, BPA-free materials
@@ -142,7 +142,7 @@ const localChatFallback = (message: string, language: 'en' | 'bn'): string => {
 
   // Shipping / delivery
   if (input.match(/\b(ship|deliver|order|return|refund)\b/)) {
-    return bn ? `₹2,000-এর উপরে অর্ডারে বিনামূল্যে ডেলিভারি! ৩-৫ কার্যদিবসে পৌঁছে যাবে। ৭ দিনের মধ্যে সহজ রিটার্ন। 📦` : `Free shipping on orders above ₹2,000! Standard delivery takes 3-5 business days. Easy returns within 7 days. You can also order via WhatsApp! 📦`;
+    return bn ? `₹৪৯৯-এর উপরে অর্ডারে বিনামূল্যে ডেলিভারি! ৩-৫ কার্যদিবসে পৌঁছে যাবে। ৭ দিনের মধ্যে সহজ রিটার্ন। 📦` : `Free shipping on orders above ₹499! Standard delivery takes 3-5 business days. Easy returns within 7 days. You can also order via WhatsApp! 📦`;
   }
 
   // Default helpful response

@@ -1,5 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { generateImageWithPrompt, editImageWithPrompt } from '../services/gemini';
+import { useAuth } from '../contexts/AuthContext';
+import LoginModal from '../components/LoginModal';
 
 type TabMode = 'generate' | 'edit';
 type ImageSize = '1024x1024' | '2048x2048' | '4096x4096';
@@ -11,6 +13,8 @@ const IMAGE_SIZE_OPTIONS: { value: ImageSize; label: string }[] = [
 ];
 
 const ImageGenerator: React.FC = () => {
+    const { isAuthenticated } = useAuth();
+    const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
     const [activeTab, setActiveTab] = useState<TabMode>('generate');
     const [prompt, setPrompt] = useState('');
     const [imageSize, setImageSize] = useState<ImageSize>('1024x1024');
@@ -149,7 +153,28 @@ const ImageGenerator: React.FC = () => {
     };
 
     return (
-        <div className="flex-1 bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50 dark:from-gray-900 dark:to-gray-800 min-h-[calc(100vh-64px)]">
+        <div className="flex-1 bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50 dark:from-gray-900 dark:to-gray-800 min-h-[calc(100vh-64px)] relative overflow-hidden">
+            {!isAuthenticated && (
+                <div className="absolute inset-0 bg-white/70 dark:bg-[#1a1a1a]/85 backdrop-blur-md z-30 flex flex-col items-center justify-center p-6 text-center">
+                    <div className="max-w-md bg-white dark:bg-[#1a170d] p-8 rounded-3xl border border-[#e6e3db]/80 dark:border-[#332f20]/80 shadow-2xl space-y-5">
+                        <div className="size-16 rounded-2xl bg-gradient-to-br from-pink-500 to-purple-500 text-white flex items-center justify-center mx-auto shadow-lg animate-pulse">
+                            <span className="material-symbols-outlined text-4xl">lock</span>
+                        </div>
+                        <h3 className="text-xl font-bold text-[#181611] dark:text-white">Unlock AI Image Generator</h3>
+                        <p className="text-sm text-[#8a8060] dark:text-gray-400">
+                            Log in or create a free account to generate high-resolution toy designs, edit custom banners, and download custom wallpapers.
+                        </p>
+                        <button
+                            onClick={() => setIsLoginModalOpen(true)}
+                            className="bg-primary hover:bg-[#e5b31f] text-[#181611] font-bold px-6 py-2.5 rounded-xl shadow-lg transition-all active:scale-95 transform flex items-center gap-2 mx-auto"
+                        >
+                            <span className="material-symbols-outlined text-lg">login</span>
+                            Log In / Sign Up
+                        </button>
+                    </div>
+                </div>
+            )}
+
             <div className="max-w-6xl mx-auto px-4 py-8">
                 {/* Header */}
                 <div className="text-center mb-8">
@@ -180,226 +205,215 @@ const ImageGenerator: React.FC = () => {
                             }`}
                     >
                         <span className="material-symbols-outlined text-lg mr-2 align-middle">edit</span>
-                        Edit
+                        Edit Image
                     </button>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* Left Panel - Controls */}
-                    <div className="space-y-6">
-                        <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
-                            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-                                {activeTab === 'generate' ? 'Generation Settings' : 'Editing Settings'}
-                            </h2>
-
-                            {/* Image Upload for Edit Mode */}
-                            {activeTab === 'edit' && (
-                                <div className="mb-6">
-                                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                        Upload Image
-                                    </label>
-                                    <input
-                                        ref={fileInputRef}
-                                        type="file"
-                                        accept="image/*"
-                                        onChange={handleImageUpload}
-                                        className="hidden"
+                {/* Main Content Area */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    {/* Controls Panel */}
+                    <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700">
+                        {activeTab === 'generate' ? (
+                            /* Generate Form */
+                            <div className="space-y-6">
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">Prompt</label>
+                                    <textarea
+                                        value={prompt}
+                                        onChange={(e) => setPrompt(e.target.value)}
+                                        placeholder="Describe the image you want to generate in detail..."
+                                        rows={4}
+                                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-900 text-gray-950 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all text-sm resize-none"
+                                        disabled={isLoading}
                                     />
-                                    <button
-                                        onClick={() => fileInputRef.current?.click()}
-                                        className="w-full py-3 px-4 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl hover:border-purple-500 transition-colors flex items-center justify-center gap-2 text-gray-600 dark:text-gray-300"
-                                    >
-                                        <span className="material-symbols-outlined">upload</span>
-                                        {uploadedImage ? uploadedImage.name : 'Click to upload image'}
-                                    </button>
-
-                                    {uploadedImagePreview && (
-                                        <div className="mt-4 relative rounded-xl overflow-hidden border-2 border-gray-200 dark:border-gray-700">
-                                            <img src={uploadedImagePreview} alt="Uploaded" className="w-full h-48 object-cover" />
-                                            <button
-                                                onClick={() => {
-                                                    setUploadedImage(null);
-                                                    setUploadedImagePreview(null);
-                                                    if (fileInputRef.current) fileInputRef.current.value = '';
-                                                }}
-                                                className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition-colors"
-                                            >
-                                                <span className="material-symbols-outlined text-sm">close</span>
-                                            </button>
-                                        </div>
-                                    )}
                                 </div>
-                            )}
 
-                            {/* Image Size Selection (Generate Mode Only) */}
-                            {activeTab === 'generate' && (
-                                <div className="mb-6">
-                                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                        Image Size
-                                    </label>
-                                    <div className="grid grid-cols-3 gap-2">
-                                        {IMAGE_SIZE_OPTIONS.map(({ value, label }) => (
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">Resolution</label>
+                                    <div className="grid grid-cols-3 gap-3">
+                                        {IMAGE_SIZE_OPTIONS.map((opt) => (
                                             <button
-                                                key={value}
-                                                onClick={() => setImageSize(value)}
-                                                className={`py-2 px-4 rounded-lg font-medium transition-all ${imageSize === value
-                                                    ? 'bg-purple-500 text-white shadow-md'
-                                                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                                                key={opt.value}
+                                                onClick={() => setImageSize(opt.value)}
+                                                className={`py-3 rounded-xl border-2 font-semibold text-sm transition-all ${imageSize === opt.value
+                                                    ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400'
+                                                    : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 text-gray-600 dark:text-gray-300'
                                                     }`}
+                                                disabled={isLoading}
                                             >
-                                                {label}
+                                                {opt.label}
                                             </button>
                                         ))}
                                     </div>
                                 </div>
-                            )}
 
-                            {/* Prompt Input */}
-                            <div className="mb-6">
-                                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                    {activeTab === 'generate' ? 'Describe what you want to create' : 'Describe how to edit'}
-                                </label>
-                                <textarea
-                                    value={prompt}
-                                    onChange={(e) => setPrompt(e.target.value)}
-                                    placeholder={activeTab === 'generate'
-                                        ? 'e.g., A colorful toy robot with LED lights on a white background'
-                                        : 'e.g., Change the background to a rainbow, add sparkles'
-                                    }
-                                    rows={4}
-                                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none"
-                                />
-                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                    {prompt.length}/500 characters
-                                </p>
+                                <div>
+                                    <button
+                                        onClick={handleGenerate}
+                                        disabled={isLoading || !prompt.trim()}
+                                        className="w-full py-4 bg-gradient-to-r from-pink-500 to-purple-500 text-white font-bold rounded-xl shadow-lg hover:brightness-110 active:translate-y-0.5 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        {isLoading ? (
+                                            <>
+                                                <span className="material-symbols-outlined animate-spin">progress_activity</span>
+                                                Generating...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <span className="material-symbols-outlined">auto_awesome</span>
+                                                Generate Image
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
                             </div>
-
-                            {/* Example Prompts */}
-                            <div className="mb-6">
-                                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                    Example Prompts
-                                </label>
-                                <div className="space-y-2">
-                                    {examplePrompts[activeTab].map((example, idx) => (
+                        ) : (
+                            /* Edit Form */
+                            <div className="space-y-6">
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">Source Image</label>
+                                    <input
+                                        type="file"
+                                        ref={fileInputRef}
+                                        onChange={handleImageUpload}
+                                        accept="image/*"
+                                        className="hidden"
+                                        disabled={isLoading}
+                                    />
+                                    {uploadedImagePreview ? (
+                                        <div className="relative group rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 aspect-video bg-gray-50 dark:bg-gray-900">
+                                            <img
+                                                src={uploadedImagePreview}
+                                                alt="Preview"
+                                                className="w-full h-full object-contain"
+                                            />
+                                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                                                <button
+                                                    onClick={() => fileInputRef.current?.click()}
+                                                    className="px-4 py-2 bg-white text-gray-800 text-xs font-semibold rounded-lg shadow-md hover:bg-gray-50 transition-colors"
+                                                    disabled={isLoading}
+                                                >
+                                                    Change
+                                                </button>
+                                                <button
+                                                    onClick={() => { setUploadedImage(null); setUploadedImagePreview(null); }}
+                                                    className="px-4 py-2 bg-red-600 text-white text-xs font-semibold rounded-lg shadow-md hover:bg-red-700 transition-colors"
+                                                    disabled={isLoading}
+                                                >
+                                                    Remove
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ) : (
                                         <button
-                                            key={idx}
-                                            onClick={() => setPrompt(example)}
-                                            className="w-full text-left px-3 py-2 text-sm bg-gray-50 dark:bg-gray-700 hover:bg-purple-50 dark:hover:bg-purple-900/30 border border-gray-200 dark:border-gray-600 rounded-lg transition-colors text-gray-700 dark:text-gray-300"
+                                            onClick={() => fileInputRef.current?.click()}
+                                            className="w-full aspect-video border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl hover:border-purple-500 dark:hover:border-purple-400 transition-colors flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-900/50"
+                                            disabled={isLoading}
                                         >
-                                            {example}
+                                            <span className="material-symbols-outlined text-4xl text-gray-400 dark:text-gray-600 mb-2">upload_file</span>
+                                            <span className="text-sm font-semibold text-gray-600 dark:text-gray-400">Upload source image</span>
+                                            <span className="text-xs text-gray-400 dark:text-gray-600 mt-1">PNG, JPG, or WEBP up to 10MB</span>
                                         </button>
-                                    ))}
+                                    )}
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">Editing Instructions</label>
+                                    <textarea
+                                        value={prompt}
+                                        onChange={(e) => setPrompt(e.target.value)}
+                                        placeholder="E.g. Change the toy's color to blue, add birthday decorations..."
+                                        rows={4}
+                                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-900 text-gray-950 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all text-sm resize-none"
+                                        disabled={isLoading}
+                                    />
+                                </div>
+
+                                <div>
+                                    <button
+                                        onClick={handleEdit}
+                                        disabled={isLoading || !uploadedImage || !prompt.trim()}
+                                        className="w-full py-4 bg-gradient-to-r from-pink-500 to-purple-500 text-white font-bold rounded-xl shadow-lg hover:brightness-110 active:translate-y-0.5 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        {isLoading ? (
+                                            <>
+                                                <span className="material-symbols-outlined animate-spin">progress_activity</span>
+                                                Processing...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <span className="material-symbols-outlined">brush</span>
+                                                Apply Edits
+                                            </>
+                                        )}
+                                    </button>
                                 </div>
                             </div>
+                        )}
 
-                            {/* Action Button */}
-                            <button
-                                onClick={activeTab === 'generate' ? handleGenerate : handleEdit}
-                                disabled={isLoading || (activeTab === 'edit' && !uploadedImage)}
-                                className="w-full py-4 bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white font-bold rounded-xl shadow-lg transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2"
-                            >
-                                {isLoading ? (
-                                    <>
-                                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                        Processing...
-                                    </>
-                                ) : (
-                                    <>
-                                        <span className="material-symbols-outlined">
-                                            {activeTab === 'generate' ? 'auto_awesome' : 'edit'}
-                                        </span>
-                                        {activeTab === 'generate' ? 'Generate Image' : 'Edit Image'}
-                                    </>
-                                )}
-                            </button>
-                        </div>
-
-                        {/* Info Card */}
-                        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4">
-                            <div className="flex items-start gap-3">
-                                <span className="material-symbols-outlined text-blue-500 mt-0.5">info</span>
-                                <div className="text-sm text-blue-900 dark:text-blue-200">
-                                    <p className="font-semibold mb-1">Tips for best results:</p>
-                                    <ul className="space-y-1 text-xs list-disc list-inside">
-                                        <li>Be specific and descriptive in your prompts</li>
-                                        <li>Mention colors, styles, and desired mood</li>
-                                        <li>For editing, describe changes clearly</li>
-                                        <li>Higher resolutions take longer to generate</li>
-                                    </ul>
-                                </div>
+                        {/* Example Prompts helper */}
+                        <div className="mt-8 pt-6 border-t border-gray-100 dark:border-gray-700">
+                            <span className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider block mb-3">Try these prompts</span>
+                            <div className="flex flex-wrap gap-2">
+                                {examplePrompts[activeTab].map((ex, i) => (
+                                    <button
+                                        key={i}
+                                        onClick={() => setPrompt(ex)}
+                                        className="px-3.5 py-1.5 bg-gray-50 dark:bg-gray-900/60 hover:bg-gray-100 dark:hover:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg text-xs text-gray-600 dark:text-gray-300 transition-colors"
+                                        disabled={isLoading}
+                                    >
+                                        {ex}
+                                    </button>
+                                ))}
                             </div>
                         </div>
                     </div>
 
-                    {/* Right Panel - Output */}
-                    <div className="space-y-6">
-                        <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 min-h-[500px] flex flex-col">
-                            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Output</h2>
-
-                            {/* Status Messages */}
+                    {/* Result Panel */}
+                    <div className="flex flex-col bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 min-h-[400px]">
+                        <div className="flex-1 flex flex-col">
+                            {/* Error notification */}
                             {error && (
-                                <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl flex items-center gap-2 text-red-600 dark:text-red-400">
+                                <div className="mb-4 bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400 p-4 rounded-xl border border-red-200/50 dark:border-red-900/30 flex items-center gap-2">
                                     <span className="material-symbols-outlined">error</span>
                                     <span className="text-sm font-medium">{error}</span>
                                 </div>
                             )}
 
+                            {/* Success notification */}
                             {successMessage && (
-                                <div className="mb-4 p-4 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-xl flex items-center gap-2 text-green-600 dark:text-green-400">
+                                <div className="mb-4 bg-green-50 dark:bg-green-950/20 text-green-600 dark:text-green-400 p-4 rounded-xl border border-green-200/50 dark:border-green-900/30 flex items-center gap-2">
                                     <span className="material-symbols-outlined">check_circle</span>
                                     <span className="text-sm font-medium">{successMessage}</span>
                                 </div>
                             )}
-
-                            {/* Image Display */}
-                            <div className="flex-1 flex items-center justify-center bg-gray-50 dark:bg-gray-900 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 overflow-hidden">
+                            
+                            {/* Generated Content Placeholder */}
+                            <div className="flex-1 flex flex-col items-center justify-center text-center p-6 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-2xl bg-gray-50 dark:bg-gray-900/50">
                                 {generatedImageUrl ? (
-                                    <img
-                                        src={generatedImageUrl}
-                                        alt="Generated"
-                                        className="max-w-full max-h-full object-contain"
-                                    />
+                                    <div className="space-y-4 w-full">
+                                        <img src={generatedImageUrl} alt="Result" className="rounded-lg shadow-lg max-w-full h-auto mx-auto" />
+                                        <button onClick={handleDownload} className="w-full py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-colors">Download</button>
+                                    </div>
                                 ) : isLoading ? (
-                                    <div className="text-center">
-                                        <div className="w-16 h-16 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mb-4 mx-auto"></div>
-                                        <p className="text-gray-600 dark:text-gray-400 font-medium">
-                                            {activeTab === 'generate' ? 'Generating image...' : 'Editing image...'}
-                                        </p>
-                                        <p className="text-sm text-gray-500 dark:text-gray-500 mt-2">
-                                            {loadingStage || 'Trying multiple AI providers for best result...'}
-                                        </p>
-                                        <p className="text-xs text-gray-400 dark:text-gray-600 mt-1">This may take 10-30 seconds</p>
+                                    <div className="space-y-4">
+                                        <div className="w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                                        <p className="text-gray-500 dark:text-gray-400 font-medium">{loadingStage || 'Generating...'}</p>
                                     </div>
                                 ) : (
-                                    <div className="text-center p-8">
-                                        <span className="material-symbols-outlined text-6xl text-gray-300 dark:text-gray-600 mb-4">image</span>
-                                        <p className="text-gray-500 dark:text-gray-400">Your generated image will appear here</p>
+                                    <div className="text-gray-400 dark:text-gray-600">
+                                        <span className="material-symbols-outlined text-5xl mb-2">image</span>
+                                        <p>Your result will appear here</p>
                                     </div>
                                 )}
                             </div>
-
-                            {/* Download Button */}
-                            {generatedImageUrl && (
-                                <div className="mt-4 flex gap-2">
-                                    <button
-                                        onClick={handleDownload}
-                                        className="flex-1 py-3 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
-                                    >
-                                        <span className="material-symbols-outlined">download</span>
-                                        Download Image
-                                    </button>
-                                    <button
-                                        onClick={resetForm}
-                                        className="px-4 py-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 font-semibold rounded-xl transition-colors"
-                                    >
-                                        <span className="material-symbols-outlined">refresh</span>
-                                    </button>
-                                </div>
-                            )}
                         </div>
                     </div>
                 </div>
             </div>
+
+            {/* Login Prompt Modal */}
+            <LoginModal isOpen={isLoginModalOpen} onClose={() => setIsLoginModalOpen(false)} />
         </div>
     );
 };

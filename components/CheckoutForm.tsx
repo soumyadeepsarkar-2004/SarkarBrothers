@@ -1,12 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
     CardElement,
     useStripe,
     useElements,
 } from '@stripe/react-stripe-js';
-import { createPaymentIntent, confirmPayment } from '../../services/stripeService';
+import { confirmPayment } from '../../services/stripeService';
 
 interface CheckoutFormProps {
+    clientSecret: string;
     orderId: string;
     amount: number;
     onSuccess?: (paymentIntentId: string) => void;
@@ -14,6 +15,7 @@ interface CheckoutFormProps {
 }
 
 export default function CheckoutForm({
+    clientSecret,
     orderId,
     amount,
     onSuccess,
@@ -24,32 +26,6 @@ export default function CheckoutForm({
 
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [clientSecret, setClientSecret] = useState<string | null>(null);
-    const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
-
-    // Create payment intent when component mounts
-    useEffect(() => {
-        const setupPayment = async () => {
-            try {
-                setLoading(true);
-                const response = await createPaymentIntent(
-                    orderId,
-                    amount,
-                    `Order #${orderId}`
-                );
-                setClientSecret(response.clientSecret);
-                setPaymentIntentId(response.paymentIntentId);
-            } catch (err) {
-                const errorMsg = err instanceof Error ? err.message : 'Failed to initialize payment';
-                setError(errorMsg);
-                onError?.(errorMsg);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        setupPayment();
-    }, [orderId, amount]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();

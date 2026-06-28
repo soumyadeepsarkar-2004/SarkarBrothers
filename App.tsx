@@ -23,6 +23,11 @@ import { LanguageProvider } from './contexts/LanguageContext';
 import { AuthProvider } from './contexts/AuthContext';
 import StripeProvider from './contexts/StripeProvider';
 
+import ShippingReturns from './pages/ShippingReturns';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import TermsOfService from './pages/TermsOfService';
+import Faq from './pages/Faq';
+
 const ScrollToTop = () => {
   const { pathname } = useLocation();
 
@@ -40,6 +45,42 @@ const ConditionalFooter = () => {
   return <Footer />;
 };
 
+const InstallBanner = () => {
+  const [deferredPrompt, setDeferredPrompt] = React.useState<any>(null);
+
+  React.useEffect(() => {
+    const handler = (e: any) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      console.log(`User response to install: ${outcome}`);
+      setDeferredPrompt(null);
+    }
+  };
+
+  if (!deferredPrompt) return null;
+
+  return (
+    <div className="bg-primary text-[#181611] p-4 flex justify-between items-center shadow-lg border-b border-primary-dark">
+      <div>
+        <p className="font-bold">Unwrap the Magic on Your Phone!</p>
+        <p className="text-sm">Install our digital storefront app directly. No App Store required!</p>
+      </div>
+      <button onClick={handleInstallClick} className="bg-[#181611] text-white px-4 py-2 rounded-lg font-bold shadow hover:bg-black transition-colors">
+        Install App
+      </button>
+    </div>
+  );
+};
+
 const App: React.FC = () => {
   return (
     <LanguageProvider>
@@ -51,6 +92,7 @@ const App: React.FC = () => {
                 <ScrollToTop />
                 <div className="flex flex-col min-h-screen">
                   <Navbar />
+                  <InstallBanner />
                   <Routes>
                     <Route path="/" element={<Home />} />
                     <Route path="/shop" element={<Shop />} />
@@ -63,6 +105,10 @@ const App: React.FC = () => {
                     <Route path="/whatsapp-order" element={<WhatsAppOrder />} />
                     <Route path="/wishlist" element={<Wishlist />} />
                     <Route path="/admin" element={<Admin />} />
+                    <Route path="/shipping-returns" element={<ShippingReturns />} />
+                    <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+                    <Route path="/terms-of-service" element={<TermsOfService />} />
+                    <Route path="/faq" element={<Faq />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                   <ConditionalFooter />

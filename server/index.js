@@ -590,6 +590,36 @@ app.delete('/api/admin/users/:id', authenticate, requireRole(['admin', 'owner'])
   } catch (err) { res.status(500).json({ error: 'Failed to delete user' }); }
 });
 
+// Update User Role - ADMIN/DBA ONLY
+app.patch('/api/admin/users/:id/role', authenticate, requireRole(['admin', 'owner', 'dba']), auditLog('USER_ROLE_UPDATE'), async (req, res) => {
+  try {
+    const { role } = req.body;
+    if (!role || !['customer', 'owner', 'dba', 'admin'].includes(role)) {
+      return res.status(400).json({ error: 'Invalid role specified' });
+    }
+
+    const portalAccess = role === 'customer' ? ['customer'] : ['customer', 'admin'];
+
+    if (dbConnected) {
+      try {
+        const user = await User.findByIdAndUpdate(req.params.id, { role, portalAccess }, { new: true }).select('-passwordHash');
+        if (user) return res.json(user);
+      } catch (dbErr) { }
+    }
+
+    if (mockUsers[req.params.id]) {
+      mockUsers[req.params.id].role = role;
+      mockUsers[req.params.id].portalAccess = portalAccess;
+      return res.json({ ...mockUsers[req.params.id], passwordHash: undefined });
+    }
+
+    res.status(404).json({ error: 'User not found' });
+  } catch (err) {
+    console.error('Update role error:', err);
+    res.status(500).json({ error: 'Failed to update user role' });
+  }
+});
+
 // Export Admin Summary Report - ADMIN ONLY
 app.get('/api/admin/reports/summary', authenticate, requireRole(['admin', 'owner']), async (req, res) => {
   try {
