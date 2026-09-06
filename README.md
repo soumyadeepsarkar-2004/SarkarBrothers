@@ -199,6 +199,36 @@ This project is licensed under the MIT License.
 **Soumyadeep Sarkar**
 - GitHub: [@soumyadeepsarkar-2004](https://github.com/soumyadeepsarkar-2004)
 
+## 🌟 Developer Profile Highlights
+
+<div align="center">
+  <img src="https://komarev.com/ghpvc/?username=soumyadeepsarkar-2004&label=Profile%20Views&color=0e75b6&style=for-the-badge" alt="profile views" />
+  <img src="https://img.shields.io/github/followers/soumyadeepsarkar-2004?label=Followers&style=for-the-badge&color=blue" alt="followers" />
+  <img src="https://img.shields.io/github/stars/soumyadeepsarkar-2004?label=Stars&style=for-the-badge&color=yellow" alt="stars" />
+</div>
+
+<br />
+
+<div align="center">
+  <img height="170" src="https://github-readme-stats.vercel.app/api?username=soumyadeepsarkar-2004&show_icons=true&theme=tokyonight&hide_border=true&rank_icon=github" alt="GitHub stats" />
+  <img height="170" src="https://github-readme-streak-stats.herokuapp.com/?user=soumyadeepsarkar-2004&theme=tokyonight&hide_border=true" alt="GitHub streak" />
+</div>
+
+<div align="center">
+  <img height="170" src="https://github-readme-stats.vercel.app/api/top-langs/?username=soumyadeepsarkar-2004&layout=compact&theme=tokyonight&hide_border=true" alt="Top languages" />
+  <img height="170" src="https://github-profile-trophy.vercel.app/?username=soumyadeepsarkar-2004&theme=tokyonight&no-bg=true&no-frame=true&column=4&margin-w=12&margin-h=12" alt="GitHub trophies" />
+</div>
+
+<div align="center">
+  <img src="https://github-readme-activity-graph.vercel.app/graph?username=soumyadeepsarkar-2004&theme=tokyo-night&hide_border=true" alt="GitHub activity graph" />
+</div>
+
+## 🐍 Contribution Snake
+
+<div align="center">
+  <img src="https://raw.githubusercontent.com/soumyadeepsarkar-2004/soumyadeepsarkar-2004/output/github-contribution-grid-snake-dark.svg" alt="Snake animation" />
+</div>
+
 ## 🙏 Acknowledgments
 
 - Google Gemini AI for AI capabilities
